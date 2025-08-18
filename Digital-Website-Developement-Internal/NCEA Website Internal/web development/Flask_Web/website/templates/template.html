@@ -445,6 +445,58 @@
     0% { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
   }
+
+      /* Route-to-home transition */
+      .route-transition {
+        position: fixed;
+        inset: 0;
+        z-index: 1999;
+        display: grid;
+        place-items: center;
+        pointer-events: none;
+        opacity: 0;
+      }
+      .route-transition.is-active {
+        pointer-events: auto;
+        opacity: 1;
+      }
+      .route-panel {
+        position: absolute;
+        top: 0; bottom: 0;
+        width: 52%;
+        background: linear-gradient(135deg, #a73232 0%, #ffc857 100%);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+        will-change: transform;
+      }
+      .route-panel--left { left: 0; transform: translateX(-105%); }
+      .route-panel--right { right: 0; transform: translateX(105%); }
+      .route-transition.is-active .route-panel--left { animation: panelInLeft 560ms cubic-bezier(0.22,1,0.36,1) forwards; }
+      .route-transition.is-active .route-panel--right { animation: panelInRight 560ms cubic-bezier(0.22,1,0.36,1) forwards; }
+
+      .route-logo {
+        position: relative;
+        z-index: 1;
+        font-weight: 900;
+        letter-spacing: 0.2em;
+        font-size: clamp(1.8rem, 6vw, 3.5rem);
+        color: #ffc857;
+        text-shadow: 0 6px 18px rgba(0,0,0,0.35);
+        opacity: 0;
+        transform: translateY(10px) scale(0.95);
+      }
+      .route-transition.is-active .route-logo { animation: logoPopQuick 480ms cubic-bezier(0.22,1,0.36,1) 80ms forwards; }
+
+      @keyframes panelInLeft { to { transform: translateX(0); } }
+      @keyframes panelInRight { to { transform: translateX(0); } }
+      @keyframes logoPopQuick {
+        0% { opacity: 0; transform: translateY(10px) scale(0.95); }
+        60% { opacity: 1; transform: translateY(0) scale(1.04); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .route-transition, .route-panel, .route-logo { animation: none !important; transition: none !important; }
+      }
     </style>
     <meta name="baseUrl" content="{{ request.url_root[:-1] }}" />
   </head>
@@ -515,6 +567,13 @@
     <button id="backToTop" class="scroll-to-top" aria-label="Back to top">
       <i class="fas fa-arrow-up"></i>
     </button>
+
+    <!-- Route transition overlay (covers page before navigating to Home) -->
+    <div id="routeTransition" class="route-transition" aria-hidden="true">
+      <div class="route-panel route-panel--left"></div>
+      <div class="route-panel route-panel--right"></div>
+      <div class="route-logo">TF2</div>
+    </div>
 
     <!-- JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
@@ -726,6 +785,37 @@
             });
           }
         });
+      })();
+
+      // Page-to-Home transition trigger
+      (function () {
+        const overlay = document.getElementById('routeTransition');
+        if (!overlay) return;
+        const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        function playAndGo(href) {
+          if (reduceMotion) { window.location.href = href; return; }
+          overlay.classList.add('is-active');
+          document.body.style.overflow = 'hidden';
+          setTimeout(() => { window.location.href = href; }, 560); // match panelIn duration
+        }
+
+        document.addEventListener('click', (e) => {
+          const a = e.target.closest('a[href]');
+          if (!a) return;
+          // ignore modified/middle clicks or targets
+          if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          if (a.target && a.target !== '_self') return;
+
+          const url = new URL(a.href, window.location.href);
+          if (url.origin !== window.location.origin) return;
+
+          const path = url.pathname.replace(/\/+$/, '') || '/';
+          if (path === '/' || path === '/home') {
+            e.preventDefault();
+            playAndGo(url.href);
+          }
+        }, { capture: true });
       })();
     </script>
 

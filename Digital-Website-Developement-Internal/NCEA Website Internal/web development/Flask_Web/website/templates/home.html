@@ -2,12 +2,19 @@
 {% block title %}TF2 Mercenary Database{% endblock %}
 
 {% block content %}
+<!-- Page Intro Transition -->
+<div id="page-intro" class="page-intro intro--active" aria-hidden="true">
+  <div class="intro-panel intro-panel--left"></div>
+  <div class="intro-panel intro-panel--right"></div>
+  <div class="intro-logo">TF2</div>
+</div>
+
 <!-- Hero Header -->
 <header class="masthead text-center text-white py-5 position-relative overflow-hidden">
     <div class="masthead-background"></div>
     <div class="masthead-content position-relative">
         <div class="container px-5">
-            <!-- removed logo image -->
+            <!-- Logo removed by request -->
             <h1 class="masthead-heading mb-3 display-3 fw-bold text-shadow animate__animated animate__fadeInDown">
                 TF2 Mercenary Database
             </h1>
@@ -28,13 +35,13 @@
 <section id="mercs" class="py-5">
     <div class="container px-4">
         <div class="row mb-5">
-            <div class="col-lg-8 mx-auto text-center">
+        <div class="col-lg-8 mx-auto text-center" role="region" aria-label="Class filters">
                 <h2 class="display-5 mb-4 fw-bold text-white animate__animated animate__fadeIn">Choose Your Class</h2>
                 <div class="d-flex justify-content-center gap-2 flex-wrap">
-                    <button class="btn btn-sm btn-light filter-btn active" data-filter="all" aria-pressed="true">All Classes</button>
-                    <button class="btn btn-sm btn-danger filter-btn" data-filter="offense" aria-pressed="false">Offense</button>
-                    <button class="btn btn-sm btn-primary filter-btn" data-filter="defense" aria-pressed="false">Defense</button>
-                    <button class="btn btn-sm btn-success filter-btn" data-filter="support" aria-pressed="false">Support</button>
+            <button class="btn btn-sm btn-light filter-btn active" data-filter="all" aria-pressed="true" aria-controls="mercGrid">All Classes</button>
+            <button class="btn btn-sm btn-danger filter-btn" data-filter="offense" aria-pressed="false" aria-controls="mercGrid">Offense</button>
+            <button class="btn btn-sm btn-primary filter-btn" data-filter="defense" aria-pressed="false" aria-controls="mercGrid">Defense</button>
+            <button class="btn btn-sm btn-success filter-btn" data-filter="support" aria-pressed="false" aria-controls="mercGrid">Support</button>
                 </div>
             </div>
         </div>
@@ -53,13 +60,11 @@
             ] %}
             
             {% for merc in mercs %}
-            <div class="col-md-6 col-lg-4 merc-item animate__animated animate__fadeIn" 
-                 data-role="{{ merc.role }}"
-                 data-aos="fade-up"
-                 data-aos-delay="{{ loop.index * 100 }}">
+          <div class="col-md-6 col-lg-4 merc-item animate__animated animate__fadeIn" 
+              data-role="{{ merc.role }}">
                 <div class="card h-100 border-0 shadow-lg hover-effect merc-card">
                     <div class="position-relative merc-img-container">
-                        <img src="{{ url_for('static', filename='assets/img/' ~ merc.img) }}" 
+                    <img src="{{ url_for('static', filename='assets/img/' ~ merc.img) }}" 
                              class="card-img-top merc-img lazy-image" 
                              alt="{{ merc.name }} class from Team Fortress 2"
                              loading="lazy">
@@ -93,7 +98,7 @@
     .text-shadow { 
         text-shadow: 3px 3px 5px rgba(0,0,0,0.4); 
     }
-
+    
     /* Enhanced hover effects with depth */
     .hover-effect { 
         transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1); 
@@ -109,7 +114,7 @@
         transform: translateY(-4px);
         box-shadow: 0 8px 20px rgba(0,0,0,0.15);
     }
-
+    
     /* Improved filter buttons */
     .filter-btn { 
         transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1); 
@@ -147,7 +152,7 @@
         box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         font-weight: 700;
     }
-
+    
     /* Enhanced masthead and background */
     .masthead {
         padding-top: 6rem;
@@ -164,9 +169,6 @@
         width: 100%;
         height: 100%;
         z-index: -1;
-        background-size: 200% 200%;
-        animation: gradientShift 12s ease-in-out infinite;
-        will-change: background-position, transform;
     }
     .masthead-background::before {
         content: '';
@@ -178,7 +180,18 @@
         background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
         opacity: 0.5;
     }
-
+    
+    /* Logo fix */
+    .tf2-logo {
+        filter: drop-shadow(0 6px 12px rgba(0,0,0,0.3));
+        transform-origin: center bottom;
+        object-fit: contain; /* Ensures proper image proportions */
+        background-color: transparent; /* Ensures background is transparent */
+        max-width: 120px;
+        max-height: 120px;
+        border-radius: 50%; /* Ensures proper circle shape */
+    }
+    
     /* Browse button enhancement */
     .browse-btn {
         position: relative;
@@ -210,42 +223,6 @@
         100% {
             transform: translateX(100%);
         }
-    }
-
-    /* Soft hero animations */
-    @keyframes gradientShift {
-        0%, 100% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-    }
-
-    @keyframes floatY {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-8px); }
-    }
-
-    @keyframes fadeDownSoft {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeUpSoft {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes popIn {
-        0% { opacity: 0; transform: scale(0.9); }
-        60% { opacity: 1; transform: scale(1.03); }
-        100% { transform: scale(1); }
-    }
-
-    .masthead-heading { animation: fadeDownSoft .8s ease-out both; }
-    .masthead-subheading { animation: fadeUpSoft .8s .1s ease-out both; }
-    .browse-btn { animation: popIn .6s .2s ease-out both; }
-
-    /* Respect reduced motion preferences */
-    @media (prefers-reduced-motion: reduce) {
-        * { animation: none !important; transition: none !important; }
     }
     
     /* Card improvements */
@@ -342,12 +319,96 @@
             font-size: 1.5rem !important;
         }
     }
+
+    /* Page load intro */
+    .page-intro {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(1200px 800px at 110% -10%, rgba(255,200,87,0.12), transparent 60%),
+          radial-gradient(1200px 800px at -10% 110%, rgba(167,50,50,0.12), transparent 60%),
+          repeating-linear-gradient(135deg, rgba(0,0,0,0.35) 0 18px, rgba(0,0,0,0.45) 18px 36px),
+          #141414;
+        overflow: hidden;
+        opacity: 1;
+        transition: opacity .4s ease;
+    }
+    .intro-panel {
+        position: absolute;
+        top: 0; bottom: 0;
+        width: 52%;
+        background: linear-gradient(135deg, #a73232 0%, #ffc857 100%);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+        will-change: transform;
+        transform: translateX(0);
+    }
+    .intro-panel--left { left: 0; }
+    .intro-panel--right { right: 0; }
+
+    .intro-logo {
+        position: relative;
+        z-index: 1;
+        font-weight: 900;
+        letter-spacing: 0.2em;
+        font-size: clamp(2rem, 8vw, 4.5rem);
+        color: #ffc857;
+        text-shadow: 0 6px 18px rgba(0,0,0,0.35);
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+        animation: logoPop 900ms cubic-bezier(0.22, 1, 0.36, 1) 120ms forwards;
+        user-select: none;
+        pointer-events: none;
+    }
+
+    /* Animate out when intro--active is removed */
+    .page-intro:not(.intro--active) .intro-panel--left {
+        animation: slideLeft 900ms cubic-bezier(0.22, 1, 0.36, 1) 220ms forwards;
+    }
+    .page-intro:not(.intro--active) .intro-panel--right {
+        animation: slideRight 900ms cubic-bezier(0.22, 1, 0.36, 1) 220ms forwards;
+    }
+    .page-intro:not(.intro--active) {
+        animation: fadeAway 400ms ease 1080ms forwards;
+    }
+
+    @keyframes slideLeft { to { transform: translateX(-105%); } }
+    @keyframes slideRight { to { transform: translateX(105%); } }
+    @keyframes fadeAway { to { opacity: 0; visibility: hidden; } }
+    @keyframes logoPop {
+        0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+        60% { opacity: 1; transform: translateY(0) scale(1.06); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Respect reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+        .page-intro, .intro-panel, .intro-logo { animation: none !important; transition: none !important; }
+        .page-intro { display: none !important; }
+    }
 </style>
 {% endblock %}
 
 {% block javascript %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Page intro: play once on load and then remove
+    const intro = document.getElementById('page-intro');
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (intro) {
+        if (reduceMotion) {
+            intro.remove();
+        } else {
+            requestAnimationFrame(() => {
+                intro.classList.remove('intro--active');
+                setTimeout(() => intro.remove(), 1600);
+            });
+        }
+    }
+
     // Filter functionality with improved animations
     const filterBtns = document.querySelectorAll('.filter-btn');
     const mercItems = document.querySelectorAll('.merc-item');
@@ -405,7 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Simplified image lazy loading without blur
+    // Fixed image lazy loading
     const lazyImages = document.querySelectorAll('.lazy-image');
     lazyImages.forEach(img => {
         // Set src attribute to ensure image loads
@@ -423,21 +484,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Use IntersectionObserver to only load images when they come into view
+    // Use IntersectionObserver if available
     if ('IntersectionObserver' in window) {
         const imageObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    entry.target.classList.add('loaded');
-                    imageObserver.unobserve(entry.target);
+                    const img = entry.target;
+                    if (!img.classList.contains('loaded')) {
+                        img.classList.add('loaded');
+                    }
+                    imageObserver.unobserve(img);
                 }
             });
         });
         
         lazyImages.forEach(img => imageObserver.observe(img));
     } else {
-        // Fallback: just mark all images as loaded
-        lazyImages.forEach(img => img.classList.add('loaded'));
+        // Fallback: just show all images
+        setTimeout(() => {
+            lazyImages.forEach(img => img.classList.add('loaded'));
+        }, 300);
     }
     
     // Add hover state for accessibility
