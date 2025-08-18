@@ -59,6 +59,9 @@ body {
   padding: 0;
 }
 
+/* Smooth theme transition */
+body { transition: background .35s ease, color .2s ease; }
+
 body::before {
   content: "";
   position: fixed;
@@ -113,24 +116,122 @@ body::before {
 
 /* CARDS */
 .card {
-  border-radius: 16px;
-  border: 3px solid var(--accent);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  /* Tunables */
+  --card-radius: 26px;
+  --ring-size: 2px;
+  --g1: #fff7df;
+  --g2: #ffe1a2;
+  --ring1: #ffc857;      /* gold */
+  --ring2: #a73232;      /* red */
+  --glow: 0 14px 48px rgba(167,50,50,.22), 0 3px 14px rgba(0,0,0,.12);
+
+  position: relative;
+  isolation: isolate;          /* keep effects contained */
+  border: 0;
+  border-radius: var(--card-radius);
+  overflow: hidden;            /* perfect corners */
+  background: linear-gradient(160deg, var(--g1) 0%, var(--g2) 100%);
+  background-clip: padding-box;
+  box-shadow: var(--glow);
+  backdrop-filter: saturate(110%) contrast(104%);
+  transition: box-shadow .35s ease, transform .25s ease, background .4s ease;
 }
-.card:hover {
-  /* Keep the lift effect, but no yellow border or shadow */
-  border-color: var(--accent); /* same as normal */
-  box-shadow: var(--shadow-lg);
+
+/* Gradient ring border (perfect corners, no seams) */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: var(--ring-size);
+  border-radius: inherit;
+  background: linear-gradient(120deg, var(--ring1), var(--ring2) 80%);
+  -webkit-mask: 
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask: 
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
 }
+
+/* Animated light sweep */
+.card::after {
+  content: "";
+  position: absolute;
+  top: -40%;
+  left: -60%;
+  width: 220%;
+  height: 180%;
+  background: linear-gradient(115deg,
+    transparent 0%,
+    rgba(255,255,255,.18) 35%,
+    rgba(255,255,255,.06) 45%,
+    transparent 60%);
+  transform: translateX(-25%);
+  transition: transform .9s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card:hover,
+.card:focus-within {
+  box-shadow: 0 18px 64px rgba(167,50,50,.28), 0 6px 18px rgba(0,0,0,.16);
+}
+.card:hover::after,
+.card:focus-within::after {
+  transform: translateX(0%);
+}
+
+/* Header polish */
 .card-header {
-  border-bottom: 2px solid var(--border);
-  font-size: 1.5rem;
-  font-family: 'Lato', Arial, Helvetica, sans-serif;
-  background: linear-gradient(90deg, var(--nav1) 0%, var(--nav2) 100%);
-  color: var(--text-inverse);
-  letter-spacing: 1px;
+  position: relative;
+  z-index: 2;
+  border: 0;
+  border-radius: calc(var(--card-radius) - 0px) calc(var(--card-radius) - 0px) 0 0;
+  background: linear-gradient(90deg, #ffc857 0%, #a73232 100%);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.6rem;
+  letter-spacing: .5px;
+  box-shadow: inset 0 -1px 0 rgba(0,0,0,.08);
+}
+
+/* Subtle accent divider under header */
+.card-header::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255,200,87,.9), rgba(255,200,87,0));
+  opacity: .9;
+}
+
+/* Body padding and light inner highlight */
+.card-body {
+  position: relative;
+  z-index: 2;
+  padding: 2.2rem 2rem 2rem 2rem;
+  background: radial-gradient(1200px 300px at -10% -20%, rgba(255,255,255,.45), transparent 60%);
+}
+
+/* Dark theme adjustments */
+.theme-dark .card {
+  --g1: #1a1a1a;
+  --g2: #222;
+  background: linear-gradient(160deg, var(--g1), var(--g2));
+  box-shadow: 0 18px 64px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.05) inset;
+}
+.theme-dark .card::before {
+  background: linear-gradient(120deg, #ffcf6a, #d24a4a 80%);
+}
+.theme-dark .card-body {
+  background: radial-gradient(1200px 300px at -10% -20%, rgba(255,255,255,.06), transparent 60%);
 }
 
 /* LIST GROUP */
@@ -210,46 +311,57 @@ h2 {
   background-color: lightpink;
 }
 
-/* Back-to-top button */
+/* Back-to-top button (restored, dark-mode aware) */
 .scroll-to-top {
   position: fixed;
-  right: 20px;
-  bottom: calc(20px + env(safe-area-inset-bottom));
+  right: 22px;
+  bottom: 22px;
   width: 48px;
   height: 48px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   border-radius: 50%;
-  border: 2px solid var(--accent);
-  background: var(--accent-2);
+  border: 2px solid rgba(35,35,35,.25);
+  background: linear-gradient(135deg, #ffe08a, #ffc857);
   color: #232323;
-  box-shadow: var(--shadow);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 22px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.12);
+  z-index: 9999; /* above card ring effects */
   opacity: 0;
-  transform: translateY(10px) scale(0.9);
-  pointer-events: none;
-  transition: opacity .25s ease, transform .25s ease, background .2s ease, color .2s ease;
-  z-index: 1100;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity .25s ease, transform .25s ease, box-shadow .25s ease, background .25s ease;
 }
+.scroll-to-top i { font-size: 1.1rem; }
+
+/* Visible state */
 .scroll-to-top.is-visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
+  visibility: visible;
+  transform: translateY(0);
 }
+
+/* Hover/focus */
 .scroll-to-top:hover {
-  background: var(--accent);
-  color: var(--accent-2);
+  box-shadow: 0 14px 32px rgba(0,0,0,.22), 0 4px 10px rgba(0,0,0,.16);
+  background: linear-gradient(135deg, #ffefb6, #ffd56a);
 }
 .scroll-to-top:focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--accent, #a73232);
   outline-offset: 3px;
 }
-.scroll-to-top.avoid-footer {
-  bottom: calc(88px + env(safe-area-inset-bottom));
+
+/* Keep it above footer if needed */
+.scroll-to-top.avoid-footer { bottom: 88px; }
+
+/* Dark theme colors */
+.theme-dark .scroll-to-top {
+  border-color: rgba(255,255,255,.18);
+  background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
+  color: #ffc857;
+  box-shadow: 0 10px 22px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.04);
 }
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .scroll-to-top { transition: none; }
+.theme-dark .scroll-to-top:hover {
+  background: linear-gradient(135deg, #333, #444);
 }
 
 /* INTERACTIVE HOVERS (desktop pointer devices) */
@@ -363,4 +475,57 @@ h2 {
 .form-control:focus {
   border-color: inherit;
   box-shadow: none;
+}
+
+/* Dark mode: make text readable everywhere and fix form controls */
+.theme-dark { color-scheme: dark; }
+
+.theme-dark body,
+.theme-dark .card,
+.theme-dark .card-body,
+.theme-dark .list-group-item,
+.theme-dark .footer-text,
+theme-dark h1, .theme-dark h2, .theme-dark h3, .theme-dark h4, .theme-dark h5, .theme-dark h6,
+.theme-dark label, .theme-dark .form-label {
+  color: var(--text);
+}
+
+/* Muted/help text should be lighter in dark mode */
+.theme-dark .text-muted,
+.theme-dark .form-text { color: rgba(255,255,255,.70) !important; }
+
+/* Inputs/selects/check controls */
+.theme-dark .form-control,
+.theme-dark .form-select,
+.theme-dark .input-group-text {
+  background-color: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+.theme-dark .form-control:focus,
+.theme-dark .form-select:focus {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 0 .2rem rgba(255,200,87,.20);
+}
+
+/* Placeholders */
+.theme-dark ::placeholder { color: rgba(255,255,255,.55) !important; }
+
+/* Checkboxes/radios accent */
+.theme-dark input[type="checkbox"],
+.theme-dark input[type="radio"] { accent-color: var(--accent-2); }
+
+/* Navbar links in dark mode */
+.theme-dark .navbar .nav-link { color: var(--text) !important; }
+.theme-dark .navbar .nav-link:hover,
+.theme-dark .navbar .nav-link:focus { color: var(--accent-2) !important; }
+
+/* Tables/lists if any */
+.theme-dark .list-group-item { border-bottom-color: rgba(255,255,255,.12); }
+
+/* Ensure buttons still readable on dark */
+.theme-dark .btn-warning {
+  background-color: var(--accent-2);
+  color: #232323;
+  border-color: var(--accent);
 }

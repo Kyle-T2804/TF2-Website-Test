@@ -32,6 +32,65 @@
   .faq .accordion-button:not(.collapsed) {
     color: #a73232; background: #ffc85722;
   }
+
+  /* Dark mode fixes for About page */
+  .theme-dark .about-hero {
+    background: linear-gradient(135deg, #2a1111 0%, #5a1e1e 55%, #4a3616 100%);
+    color: #fff;
+  }
+  .theme-dark .about-hero .brand-logo {
+    border-color: #ffcf6a;
+    box-shadow: 0 0 0 2px rgba(255,207,106,.25);
+  }
+
+  .theme-dark .stat-card {
+    background: rgba(18,18,18,.95);
+    border-color: rgba(255,207,106,.55);
+    color: #f2f2f2;
+  }
+
+  .theme-dark .feature-icon {
+    background: rgba(255,200,87,.12);
+    color: #ffcf6a;
+  }
+
+  .theme-dark .stack-badge {
+    background: #1c1c1c;
+    border-color: rgba(255,200,87,.55);
+    color: #ffcf6a;
+  }
+
+  /* Sections that use Bootstrap bg-light should not be bright in dark mode */
+  .theme-dark section.bg-light {
+    background-color: #1c1c1c !important;
+    color: #f2f2f2;
+  }
+
+  /* Accordion (FAQ) */
+  .theme-dark .faq .accordion-item {
+    background-color: #1b1b1b;
+    border-color: rgba(255,255,255,.08);
+    color: #f2f2f2;
+  }
+  .theme-dark .faq .accordion-button {
+    background-color: #222;
+    color: #f2f2f2;
+  }
+  .theme-dark .faq .accordion-button:not(.collapsed) {
+    background: rgba(255,200,87,.10);
+    color: #ffcf6a;
+    box-shadow: none;
+  }
+  .theme-dark .faq .accordion-button::after { filter: invert(1) opacity(.85); }
+
+  /* Generic readability on this page */
+  .theme-dark p,
+  .theme-dark li,
+  .theme-dark .lead,
+  .theme-dark small { color: rgba(255,255,255,.92); }
+
+  .theme-dark a { color: #ffcf6a; }
+  .theme-dark a:hover { color: #ffd676; }
 </style>
 {% endblock %}
 

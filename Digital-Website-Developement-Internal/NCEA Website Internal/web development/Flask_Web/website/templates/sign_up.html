@@ -10,9 +10,6 @@
 
   /* Hover mechanics (subtle, no color highlight) */
   @media (hover: hover) and (pointer: fine) {
-    .signup-card { transition: transform .25s ease, box-shadow .25s ease; }
-    .signup-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,.25)); }
-
     .btn { transition: transform .2s ease, box-shadow .25s ease; }
     .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,.25)); }
     .btn:active:not(:disabled) { transform: translateY(0); box-shadow: var(--shadow, 0 4px 16px rgba(0,0,0,.15)); }
@@ -40,7 +37,7 @@
 
   /* Reduced motion: disable transforms */
   @media (prefers-reduced-motion: reduce) {
-    .signup-card, .btn, .input-group .btn i { transition: none !important; transform: none !important; box-shadow: none !important; }
+    .btn, .input-group .btn i { transition: none !important; transform: none !important; box-shadow: none !important; }
   }
 </style>
 {% endblock %}
@@ -49,7 +46,7 @@
 <div class="container mt-5">
   <div class="row justify-content-center">
     <div class="col-lg-6 col-md-8">
-      <div class="card shadow-lg signup-card">
+      <div class="card shadow-lg">
         <div class="card-header bg-primary text-white text-center">
           <h2 class="mb-0">Create your account</h2>
         </div>
