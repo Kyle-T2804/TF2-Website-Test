@@ -31,18 +31,9 @@ def allowed_file(filename):
 def valid_password(pw: str) -> bool:
     """
     Validate the strength of the password.
-    Password must be at least 8 characters and include
-    upper/lowercase letters, numbers, and symbols.
+    Password must be at least 6 characters.
     """
-    if len(pw) < 8:
-        return False
-    checks = [
-        re.search(r'[a-z]', pw),
-        re.search(r'[A-Z]', pw),
-        re.search(r'\d', pw),
-        re.search(r'[^A-Za-z0-9]', pw),
-    ]
-    return all(checks)
+    return len(pw) >= 6  # Only require 6 or more characters
 
 # Home page route
 @views.route("/")

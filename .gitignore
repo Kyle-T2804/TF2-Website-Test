@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+*.db
+instance/
+Digital-Website-Developement-Internal/NCEA Website Internal/web development/Flask_Web/instance/database.db
+Digital-Website-Developement-Internal/NCEA Website Internal/web development/Flask_Web/website/__pycache__/views.cpython-311.pyc
+Digital-Website-Developement-Internal/NCEA Website Internal/web development/Flask_Web/website/__pycache__/models.cpython-311.pyc
+Digital-Website-Developement-Internal/NCEA Website Internal/web development/Flask_Web/website/__pycache__/__init__.cpython-311.pyc
+Digital-Website-Developement-Internal/NCEA Website Internal/web development/Flask_Web/website/__pycache__/auth.cpython-311.pyc

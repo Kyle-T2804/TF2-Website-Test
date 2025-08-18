@@ -1,11 +1,8 @@
-from . import  db
+from . import db
 from flask_login import UserMixin
 from sqlalchemy.sql import func
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
 
 # User model: stores info about each person who signs up.
 class User(db.Model, UserMixin):

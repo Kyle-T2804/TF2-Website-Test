@@ -4,26 +4,75 @@
 {% block content %}
 <div class="container mt-5">
   <div class="row justify-content-center">
-    <div class="col-md-6">
+    <div class="col-lg-6 col-md-8">
       <div class="card shadow-lg">
-        <div class="card-header bg-primary text-white text-center">
-          <h2>Login</h2>
+        <div class="card-header text-white text-center">
+          <h2 class="mb-0">Welcome back</h2>
+          <small class="d-block opacity-75">Sign in to continue</small>
         </div>
+
         <div class="card-body">
-          <form method="POST">
+          {% include "_flash.html" %}
+
+          <form method="POST" action="{{ url_for('views.login') }}" autocomplete="on" novalidate>
+            <!-- Username or Email -->
             <div class="mb-3">
-              <label for="identifier" class="form-label">Username or Email Address</label>
-              <input type="text" id="identifier" name="identifier" class="form-control" placeholder="Enter Username or Email" required>
+              <label for="identifier" class="form-label">Username or Email</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-user"></i></span>
+                <input
+                  type="text"
+                  id="identifier"
+                  name="identifier"
+                  class="form-control"
+                  placeholder="e.g. alex or alex@example.com"
+                  autocomplete="username"
+                  required
+                >
+              </div>
             </div>
-            <div class="mb-3">
+
+            <!-- Password -->
+            <div class="mb-2">
               <label for="password1" class="form-label">Password</label>
-              <input type="password" id="password1" name="password1" class="form-control" placeholder="Enter Your Password" required>
+              <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                <input
+                  type="password"
+                  id="password1"
+                  name="password1"
+                  class="form-control"
+                  placeholder="Your password"
+                  autocomplete="current-password"
+                  required
+                >
+                <button class="btn btn-outline-secondary" type="button" id="togglePw" aria-label="Show password">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+              <small id="capsHint" class="text-warning d-none">Caps Lock is on</small>
             </div>
-            <div class="text-center">
-              <button class="btn btn-primary" type="submit">Login</button>
+
+            <!-- Options -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="1" id="remember" name="remember">
+                <label class="form-check-label" for="remember">Remember me</label>
+              </div>
+              <a class="small" href="#" title="Forgot password link not set">Forgot password?</a>
+            </div>
+
+            <!-- Submit -->
+            <div class="d-grid gap-2">
+              <button class="btn btn-primary btn-lg" type="submit">
+                <i class="fa-solid fa-right-to-bracket me-1"></i> Sign in
+              </button>
             </div>
           </form>
-          <div class="text-center mt-3">
+
+          <hr class="my-4">
+
+          <div class="text-center">
             <span>Need an account? <a href="{{ url_for('views.sign_up') }}">Sign up here</a></span>
           </div>
         </div>
@@ -31,4 +80,37 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+  // Show/Hide password
+  (function () {
+    const input = document.getElementById('password1');
+    const btn = document.getElementById('togglePw');
+    if (btn && input) {
+      btn.addEventListener('click', () => {
+        const isPw = input.type === 'password';
+        input.type = isPw ? 'text' : 'password';
+        const icon = btn.querySelector('i');
+        icon.classList.toggle('fa-eye', !isPw);
+        icon.classList.toggle('fa-eye-slash', isPw);
+        btn.setAttribute('aria-label', isPw ? 'Hide password' : 'Show password');
+      });
+    }
+  })();
+
+  // Caps Lock hint
+  (function () {
+    const input = document.getElementById('password1');
+    const hint = document.getElementById('capsHint');
+    if (!input || !hint) return;
+    function handle(e) {
+      const on = e.getModifierState && e.getModifierState('CapsLock');
+      hint.classList.toggle('d-none', !on);
+    }
+    input.addEventListener('keyup', handle);
+    input.addEventListener('keydown', handle);
+  })();
+</script>
 {% endblock %}
