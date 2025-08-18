@@ -1,0 +1,65 @@
+{% extends "template.html" %}
+{% block title %}Engineer | TF2 Mercenary Database{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-4 text-center">
+      <div class="card shadow-lg mb-4">
+        <img src="{{ url_for('static', filename='assets/img/engineer.jpg') }}" alt="Engineer" class="img-fluid rounded-top" style="max-width: 100%;">
+        <div class="card-body">
+          <h3 class="mt-2">Engineer</h3>
+          <span class="badge bg-info mb-2 text-white">Defense</span>
+          <ul class="list-group class-info">
+            <li class="list-group-item"><strong>Health:</strong> 125 HP</li>
+            <li class="list-group-item"><strong>Abilities:</strong> Build Sentry, Dispenser, Teleporter</li>
+            <li class="list-group-item"><strong>Primary Weapon:</strong> Shotgun</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Video Embed: Meet the Engineer -->
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h5 class="mb-3">Meet the Engineer (Video)</h5>
+          <div class="ratio ratio-16x9">
+            <iframe src="https://www.youtube.com/embed/SNgNBsCI4EA" title="Meet the Engineer" allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h4>Overview</h4>
+          <p>
+            The <strong>Engineer</strong> is a support class who excels at building and maintaining machines to help his team. His sentry guns provide powerful area defense, while dispensers and teleporters keep teammates supplied and mobile.
+          </p>
+          <h4>Background</h4>
+          <p>
+            The Engineer is a soft-spoken Texan with a knack for mechanics and invention. He is always ready to lend a hand and keep his team's infrastructure running smoothly.
+          </p>
+          <h4>Tips & Strategy</h4>
+          <ul>
+            <li>Place sentry guns in strategic locations to defend objectives.</li>
+            <li>Keep dispensers and teleporters upgraded for maximum team support.</li>
+            <li>Use your shotgun for personal defense when machines are under attack.</li>
+          </ul>
+          <h4>Trivia</h4>
+          <ul>
+            <li>The Engineer is voiced by Grant Goodeve.</li>
+            <li>He can upgrade and repair his buildings using his wrench.</li>
+            <li>His southern drawl and friendly attitude make him a fan favorite.</li>
+          </ul>
+          <a href="{{ url_for('views.home') }}" class="btn btn-warning mt-3">← Back to Home</a>
+          <a href="{{ url_for('views.heavy') }}" class="btn btn-outline-secondary mt-3 float-start">
+            &larr; Previous
+          </a>
+          <a href="{{ url_for('views.medic') }}" class="btn btn-outline-primary mt-3 float-end">
+            Next &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

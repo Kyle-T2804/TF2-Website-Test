@@ -1,0 +1,123 @@
+{% extends "template.html" %}
+{% block title %}TF2 Mercenary Database{% endblock %}
+
+{% block content %}
+<!-- Hero Header -->
+<header class="masthead text-center text-white py-5 position-relative overflow-hidden">
+    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(135deg, #a73232 0%, #ffc857 100%); clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);"></div>
+    <div class="masthead-content position-relative">
+        <div class="container px-5">
+            <img src="{{ url_for('static', filename='assets/siteicon.png') }}" 
+                 alt="TF2 Logo" 
+                 width="120" height="120" 
+                 class="mb-4 rounded-circle border border-4 border-warning shadow-lg animate__animated animate__bounceIn">
+            <h1 class="masthead-heading mb-3 display-3 fw-bold text-shadow animate__animated animate__fadeInDown">
+                TF2 Mercenary Database
+            </h1>
+            <h2 class="masthead-subheading mb-4 fs-2 animate__animated animate__fadeInUp">Meet the Team!</h2>
+            <p class="lead mb-4 animate__animated animate__fadeIn animate__delay-1s">
+                Explore detailed info, images, and community comments for every Team Fortress 2 class.
+            </p>
+            <a href="#mercs" 
+               class="btn btn-warning btn-lg fw-bold shadow-lg px-5 py-3 animate__animated animate__pulse animate__infinite">
+                <i class="fas fa-chevron-down me-2"></i>Browse Mercenaries
+            </a>
+        </div>
+    </div>
+</header>
+
+<!-- Mercenary Cards Grid -->
+<section id="mercs" class="py-5">
+    <div class="container px-4">
+        <div class="row mb-5">
+            <div class="col-lg-8 mx-auto text-center">
+                <h2 class="display-5 mb-4 fw-bold text-white">Choose Your Class</h2>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <button class="btn btn-sm btn-light filter-btn active" data-filter="all">All Classes</button>
+                    <button class="btn btn-sm btn-danger filter-btn" data-filter="offense">Offense</button>
+                    <button class="btn btn-sm btn-primary filter-btn" data-filter="defense">Defense</button>
+                    <button class="btn btn-sm btn-success filter-btn" data-filter="support">Support</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4" id="mercGrid">
+            {% set mercs = [
+                {'name': 'Scout', 'img': 'scout.jpg', 'route': 'scout', 'role': 'offense', 'desc': 'Fast-moving flanker'},
+                {'name': 'Soldier', 'img': 'soldier.jpg', 'route': 'soldier', 'role': 'offense', 'desc': 'Versatile rocket specialist'},
+                {'name': 'Pyro', 'img': 'pyro.jpg', 'route': 'pyro', 'role': 'offense', 'desc': 'Close-range ambusher'},
+                {'name': 'Demoman', 'img': 'demoman.jpg', 'route': 'demoman', 'role': 'defense', 'desc': 'Explosive expert'},
+                {'name': 'Heavy', 'img': 'heavy.jpg', 'route': 'heavy', 'role': 'defense', 'desc': 'Walking tank'},
+                {'name': 'Engineer', 'img': 'engineer.jpg', 'route': 'engineer', 'role': 'defense', 'desc': 'Defense specialist'},
+                {'name': 'Medic', 'img': 'medic.jpg', 'route': 'medic', 'role': 'support', 'desc': 'Team healer'},
+                {'name': 'Sniper', 'img': 'sniper.jpg', 'route': 'sniper', 'role': 'support', 'desc': 'Long-range specialist'},
+                {'name': 'Spy', 'img': 'spy.jpg', 'route': 'spy', 'role': 'support', 'desc': 'Stealth infiltrator'}
+            ] %}
+            
+            {% for merc in mercs %}
+            <div class="col-md-6 col-lg-4 merc-item" data-role="{{ merc.role }}">
+                <div class="card h-100 border-0 shadow-lg hover-effect">
+                    <div class="position-relative">
+                        <img src="{{ url_for('static', filename='assets/img/' + merc.img) }}" 
+                             class="card-img-top p-3" 
+                             alt="{{ merc.name }}"
+                             loading="lazy">
+                        <div class="position-absolute top-0 end-0 m-3">
+                            <span class="badge bg-{{ 'danger' if merc.role == 'offense' else 'primary' if merc.role == 'defense' else 'success' }}">
+                                {{ merc.role|title }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body text-center">
+                        <h5 class="card-title mb-2 fw-bold">{{ merc.name }}</h5>
+                        <p class="text-muted small mb-3">{{ merc.desc }}</p>
+                        <a href="{{ url_for('views.' + merc.route) }}" 
+                           class="btn btn-outline-warning w-100">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+<style>
+    .text-shadow { text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+    .hover-effect { transition: transform 0.3s ease; }
+    .hover-effect:hover { transform: translateY(-5px); }
+    .filter-btn { transition: all 0.3s ease; }
+    .filter-btn.active { transform: scale(1.1); }
+</style>
+{% endblock %}
+
+{% block javascript %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const mercItems = document.querySelectorAll('.merc-item');
+
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const filter = btn.dataset.filter;
+            
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            mercItems.forEach(item => {
+                if (filter === 'all' || item.dataset.role === filter) {
+                    item.style.display = 'block';
+                    item.classList.add('animate__animated', 'animate__fadeIn');
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

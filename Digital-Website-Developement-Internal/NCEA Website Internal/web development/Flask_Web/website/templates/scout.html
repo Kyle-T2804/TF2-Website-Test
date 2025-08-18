@@ -1,0 +1,132 @@
+{% extends "template.html" %}
+{% block title %}Scout | TF2 Mercenary Database{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+
+  <!-- Hero Banner -->
+  <div class="card text-white shadow-lg mb-5 border-0" style="background: url('{{ url_for('static', filename='assets/img/scout_bg.jpg') }}') center/cover no-repeat;">
+    <div class="card-body text-center p-5" style="background: rgba(0,0,0,0.6);">
+      <h1 class="display-4 fw-bold">The Scout</h1>
+      <p class="lead">“Grass grows, birds fly, sun shines, and brother... I hurt people.”</p>
+      <span class="badge bg-primary fs-5">Offense Class</span>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Left Column: Image + Video -->
+    <div class="col-md-4 text-center">
+      <div class="card shadow-lg mb-4 border-0">
+        <img src="{{ url_for('static', filename='assets/img/scout.jpg') }}" alt="Scout" class="img-fluid rounded-top">
+        <div class="card-body">
+          <h3 class="mt-2">Class Stats</h3>
+          <div class="d-flex justify-content-between">
+            <span>Health</span><span>125</span>
+          </div>
+          <div class="progress mb-2">
+            <div class="progress-bar bg-danger" style="width: 40%"></div>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span>Speed</span><span>Fastest</span>
+          </div>
+          <div class="progress mb-2">
+            <div class="progress-bar bg-success" style="width: 100%"></div>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span>Difficulty</span><span>Medium</span>
+          </div>
+          <div class="progress">
+            <div class="progress-bar bg-warning" style="width: 60%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video -->
+      <div class="card shadow-lg mb-4 border-0">
+        <div class="card-body">
+          <h5 class="mb-3">Meet the Scout</h5>
+          <div class="ratio ratio-16x9">
+            <iframe src="https://www.youtube.com/embed/geNMz0J9TEQ" title="Meet the Scout" allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Info -->
+    <div class="col-md-8">
+      <div class="card shadow-lg mb-4 border-0">
+        <div class="card-body">
+          <h4 class="mb-3">Overview</h4>
+          <p>
+            The <strong>Scout</strong> is the fastest class in Team Fortress 2, excelling at flanking, harassment, and rapid objective captures.
+            His <em>double jump</em> makes him unpredictable and able to reach otherwise inaccessible spots.
+          </p>
+
+          <h4 class="mt-4">Weapons</h4>
+          <div class="row text-center">
+            <div class="col-md-4">
+              <div class="card border-0 shadow-sm p-3">
+                <img src="{{ url_for('static', filename='assets/img/scattergun.png') }}" alt="Scattergun" class="img-fluid" style="max-height:80px;">
+                <p class="mt-2">Scattergun</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card border-0 shadow-sm p-3">
+                <img src="{{ url_for('static', filename='assets/img/pistol.png') }}" alt="Pistol" class="img-fluid" style="max-height:80px;">
+                <p class="mt-2">Pistol</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="card border-0 shadow-sm p-3">
+                <img src="{{ url_for('static', filename='assets/img/bat.png') }}" alt="Bat" class="img-fluid" style="max-height:80px;">
+                <p class="mt-2">Bat</p>
+              </div>
+            </div>
+          </div>
+
+          <h4 class="mt-4">Tips & Strategy</h4>
+          <div class="accordion" id="scoutTips">
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#tip1">Flanking</button>
+              </h2>
+              <div id="tip1" class="accordion-collapse collapse show" data-bs-parent="#scoutTips">
+                <div class="accordion-body">Use speed and double jump to approach enemies from unexpected angles.</div>
+              </div>
+            </div>
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tip2">Objective Play</button>
+              </h2>
+              <div id="tip2" class="accordion-collapse collapse" data-bs-parent="#scoutTips">
+                <div class="accordion-body">Capture points twice as fast as other classes—be the first on the scene.</div>
+              </div>
+            </div>
+            <div class="accordion-item">
+              <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tip3">Avoid Heavies & Sentries</button>
+              </h2>
+              <div id="tip3" class="accordion-collapse collapse" data-bs-parent="#scoutTips">
+                <div class="accordion-body">Direct fights with Heavies or sentries are a bad idea—focus on harassment.</div>
+              </div>
+            </div>
+          </div>
+
+          <h4 class="mt-4">Trivia</h4>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item"><i class="bi bi-person-fill"></i> Voiced by Nathan Vetterlein</li>
+            <li class="list-group-item"><i class="bi bi-arrow-up"></i> Only class that can double jump</li>
+            <li class="list-group-item"><i class="bi bi-chat-dots"></i> Known for his Boston accent and cocky banter</li>
+          </ul>
+
+          <!-- Navigation -->
+          <div class="d-flex justify-content-between mt-4">
+            <a href="{{ url_for('views.home') }}" class="btn btn-warning">&larr; Back to Home</a>
+            <a href="{{ url_for('views.soldier') }}" class="btn btn-outline-primary">Next: Soldier &rarr;</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

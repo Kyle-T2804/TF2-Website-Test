@@ -1,0 +1,65 @@
+{% extends "template.html" %}
+{% block title %}Pyro | TF2 Mercenary Database{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-4 text-center">
+      <div class="card shadow-lg mb-4">
+        <img src="{{ url_for('static', filename='assets/img/pyro.jpg') }}" alt="Pyro" class="img-fluid rounded-top" style="max-width: 100%;">
+        <div class="card-body">
+          <h3 class="mt-2">Pyro</h3>
+          <span class="badge bg-warning mb-2 text-dark">Offense</span>
+          <ul class="list-group class-info">
+            <li class="list-group-item"><strong>Health:</strong> 175 HP</li>
+            <li class="list-group-item"><strong>Abilities:</strong> Airblast, Afterburn</li>
+            <li class="list-group-item"><strong>Primary Weapon:</strong> Flamethrower</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Video Embed: Meet the Pyro -->
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h5 class="mb-3">Meet the Pyro (Video)</h5>
+          <div class="ratio ratio-16x9">
+            <iframe src="https://www.youtube.com/embed/WUhOnX8qt3I" title="Meet the Pyro" allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h4>Overview</h4>
+          <p>
+            The <strong>Pyro</strong> is a close-range specialist who uses a flamethrower to set enemies on fire and disrupt enemy formations. Pyro excels at area denial and ambushing foes.
+          </p>
+          <h4>Background</h4>
+          <p>
+            The Pyro's identity is shrouded in mystery, with their gender and nationality unknown. Their obsession with fire is legendary, and their view of the world is... unique.
+          </p>
+          <h4>Tips & Strategy</h4>
+          <ul>
+            <li>Use the airblast to reflect projectiles and extinguish burning teammates.</li>
+            <li>Ambush enemies around corners for maximum damage.</li>
+            <li>Control choke points and defend objectives with fire.</li>
+          </ul>
+          <h4>Trivia</h4>
+          <ul>
+            <li>The Pyro's voice is provided by Dennis Bateman.</li>
+            <li>Pyrovision goggles change the game's visuals for the Pyro.</li>
+            <li>The Pyro's gender is intentionally left ambiguous by Valve.</li>
+          </ul>
+          <a href="{{ url_for('views.home') }}" class="btn btn-warning mt-3">← Back to Home</a>
+          <a href="{{ url_for('views.soldier') }}" class="btn btn-outline-secondary mt-3 float-start">
+            &larr; Previous
+          </a>
+          <a href="{{ url_for('views.demoman') }}" class="btn btn-outline-primary mt-3 float-end">
+            Next &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

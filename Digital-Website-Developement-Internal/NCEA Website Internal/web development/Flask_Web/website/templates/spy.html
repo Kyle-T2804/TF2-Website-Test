@@ -1,0 +1,64 @@
+{% extends "template.html" %}
+{% block title %}Spy | TF2 Mercenary Database{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-4 text-center">
+      <div class="card shadow-lg mb-4">
+        <img src="{{ url_for('static', filename='assets/img/spy.jpg') }}" alt="Spy" class="img-fluid rounded-top" style="max-width: 100%;">
+        <div class="card-body">
+          <h3 class="mt-2">Spy</h3>
+          <span class="badge bg-dark mb-2 text-white">Support</span>
+          <ul class="list-group class-info">
+            <li class="list-group-item"><strong>Health:</strong> 125 HP</li>
+            <li class="list-group-item"><strong>Abilities:</strong> Cloak, Disguise, Backstab</li>
+            <li class="list-group-item"><strong>Primary Weapon:</strong> Revolver, Knife</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Video Embed: Meet the Spy -->
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h5 class="mb-3">Meet the Spy (Video)</h5>
+          <div class="ratio ratio-16x9">
+            <iframe src="https://www.youtube.com/embed/OR4N5OhcY9s" title="Meet the Spy" allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h4>Overview</h4>
+          <p>
+            The <strong>Spy</strong> is a master of deception, able to disguise himself as the enemy and use his cloaking device to infiltrate and eliminate high-value targets.
+          </p>
+          <h4>Background</h4>
+          <p>
+            The Spy is a suave Frenchman, skilled in espionage and subterfuge. He excels at disrupting enemy defenses and picking off key targets.
+          </p>
+          <h4>Tips & Strategy</h4>
+          <ul>
+            <li>Use disguise and cloak to infiltrate enemy lines undetected.</li>
+            <li>Prioritize backstabbing enemy Medics, Engineers, and Snipers.</li>
+            <li>Sap enemy buildings before attacking Engineers.</li>
+          </ul>
+          <h4>Trivia</h4>
+          <ul>
+            <li>The Spy is voiced by Dennis Bateman.</li>
+            <li>He can disguise as any enemy class.</li>
+            <li>His sapper disables enemy Engineer buildings.</li>
+          </ul>
+          <a href="{{ url_for('views.sniper') }}" class="btn btn-outline-secondary mt-3 float-start">
+            &larr; Previous
+          </a>
+          <a href="{{ url_for('views.home') }}" class="btn btn-warning mt-3">
+            ← Back to Home
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

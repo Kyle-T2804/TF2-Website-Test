@@ -1,0 +1,65 @@
+{% extends "template.html" %}
+{% block title %}Soldier | TF2 Mercenary Database{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-4 text-center">
+      <div class="card shadow-lg mb-4">
+        <img src="{{ url_for('static', filename='assets/img/soldier.jpg') }}" alt="Soldier" class="img-fluid rounded-top" style="max-width: 100%;">
+        <div class="card-body">
+          <h3 class="mt-2">Soldier</h3>
+          <span class="badge bg-danger mb-2">Offense</span>
+          <ul class="list-group class-info">
+            <li class="list-group-item"><strong>Health:</strong> 200 HP</li>
+            <li class="list-group-item"><strong>Abilities:</strong> Rocket Jump</li>
+            <li class="list-group-item"><strong>Primary Weapon:</strong> Rocket Launcher</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Video Embed: Meet the Soldier -->
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h5 class="mb-3">Meet the Soldier (Video)</h5>
+          <div class="ratio ratio-16x9">
+            <iframe src="https://www.youtube.com/embed/jHgZh4GV9G0" title="Meet the Soldier" allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h4>Overview</h4>
+          <p>
+            The <strong>Soldier</strong> is one of the most versatile classes in Team Fortress 2, known for his powerful rocket launcher and ability to rocket jump to reach high places and surprise enemies. His balanced stats make him effective in both offense and defense.
+          </p>
+          <h4>Background</h4>
+          <p>
+            The Soldier is a patriotic American who believes discipline and firepower win battles. He is famous for his helmet, shovel, and explosive personality.
+          </p>
+          <h4>Tips & Strategy</h4>
+          <ul>
+            <li>Master rocket jumping to access strategic locations and evade enemies.</li>
+            <li>Use splash damage to hit multiple opponents or enemies behind cover.</li>
+            <li>Pair with a Medic for devastating pushes using the ÜberCharge.</li>
+          </ul>
+          <h4>Trivia</h4>
+          <ul>
+            <li>The Soldier is voiced by Rick May.</li>
+            <li>He is one of the few classes who can rocket jump.</li>
+            <li>His catchphrase "If fighting is sure to result in victory, then you must fight!" is iconic.</li>
+          </ul>
+          <a href="{{ url_for('views.home') }}" class="btn btn-warning mt-3">← Back to Home</a>
+          <a href="{{ url_for('views.scout') }}" class="btn btn-outline-secondary mt-3 float-start">
+            &larr; Previous
+          </a>
+          <a href="{{ url_for('views.pyro') }}" class="btn btn-outline-primary mt-3 float-end">
+            Next &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

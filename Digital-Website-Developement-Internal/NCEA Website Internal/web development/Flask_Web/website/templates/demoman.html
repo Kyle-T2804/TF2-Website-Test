@@ -1,0 +1,65 @@
+{% extends "template.html" %}
+{% block title %}Demoman | TF2 Mercenary Database{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-4 text-center">
+      <div class="card shadow-lg mb-4">
+        <img src="{{ url_for('static', filename='assets/img/demoman.jpg') }}" alt="Demoman" class="img-fluid rounded-top" style="max-width: 100%;">
+        <div class="card-body">
+          <h3 class="mt-2">Demoman</h3>
+          <span class="badge bg-dark mb-2 text-white">Defense</span>
+          <ul class="list-group class-info">
+            <li class="list-group-item"><strong>Health:</strong> 175 HP</li>
+            <li class="list-group-item"><strong>Abilities:</strong> Sticky Bomb Traps, Area Denial</li>
+            <li class="list-group-item"><strong>Primary Weapon:</strong> Grenade Launcher</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Video Embed: Meet the Demoman -->
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h5 class="mb-3">Meet the Demoman (Video)</h5>
+          <div class="ratio ratio-16x9">
+            <iframe src="https://www.youtube.com/embed/han3AfjH210" title="Meet the Demoman" allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h4>Overview</h4>
+          <p>
+            The <strong>Demoman</strong> is an expert in explosives, capable of laying traps and controlling key areas with sticky bombs and grenades. He excels at both offense and defense, making him a versatile choice for any team.
+          </p>
+          <h4>Background</h4>
+          <p>
+            The Demoman is a one-eyed Scottish demolitions expert, known for his love of explosions and strong accent. He is both feared and respected for his destructive capabilities.
+          </p>
+          <h4>Tips & Strategy</h4>
+          <ul>
+            <li>Use sticky bombs to defend objectives and control choke points.</li>
+            <li>Detonate traps when enemies approach for maximum impact.</li>
+            <li>Grenade launcher is effective for indirect fire and area denial.</li>
+          </ul>
+          <h4>Trivia</h4>
+          <ul>
+            <li>The Demoman is voiced by Gary Schwartz.</li>
+            <li>He is the only class with a grenade launcher and sticky bomb launcher.</li>
+            <li>His missing eye is a running joke in TF2 lore.</li>
+          </ul>
+          <a href="{{ url_for('views.pyro') }}" class="btn btn-outline-secondary mt-3 float-start">
+            &larr; Previous
+          </a>
+          <a href="{{ url_for('views.heavy') }}" class="btn btn-outline-primary mt-3 float-end">
+            Next &rarr;
+          </a>
+          <a href="{{ url_for('views.home') }}" class="btn btn-warning mt-3">← Back to Home</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

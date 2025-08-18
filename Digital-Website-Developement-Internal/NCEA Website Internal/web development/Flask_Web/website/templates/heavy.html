@@ -1,0 +1,65 @@
+{% extends "template.html" %}
+{% block title %}Heavy | TF2 Mercenary Database{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-4 text-center">
+      <div class="card shadow-lg mb-4">
+        <img src="{{ url_for('static', filename='assets/img/heavy.jpg') }}" alt="Heavy" class="img-fluid rounded-top" style="max-width: 100%;">
+        <div class="card-body">
+          <h3 class="mt-2">Heavy</h3>
+          <span class="badge bg-secondary mb-2 text-white">Defense</span>
+          <ul class="list-group class-info">
+            <li class="list-group-item"><strong>Health:</strong> 300 HP</li>
+            <li class="list-group-item"><strong>Abilities:</strong> High Damage, Tanking</li>
+            <li class="list-group-item"><strong>Primary Weapon:</strong> Minigun</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Video Embed: Meet the Heavy -->
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h5 class="mb-3">Meet the Heavy (Video)</h5>
+          <div class="ratio ratio-16x9">
+            <iframe src="https://www.youtube.com/embed/jHgZh4GV9G0" title="Meet the Heavy" allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h4>Overview</h4>
+          <p>
+            The <strong>Heavy</strong> is the strongest and most resilient class in Team Fortress 2, capable of absorbing massive amounts of damage and dealing it back with his minigun. He is the backbone of any defensive lineup.
+          </p>
+          <h4>Background</h4>
+          <p>
+            Hailing from Russia, the Heavy is known for his love of sandwiches, his deep voice, and his devotion to his weapon, Sasha. He is both feared and respected on the battlefield.
+          </p>
+          <h4>Tips & Strategy</h4>
+          <ul>
+            <li>Pair with a Medic for maximum survivability and offensive power.</li>
+            <li>Use your high health to protect teammates and hold choke points.</li>
+            <li>Spin up your minigun before rounding corners to surprise enemies.</li>
+          </ul>
+          <h4>Trivia</h4>
+          <ul>
+            <li>The Heavy is voiced by Gary Schwartz.</li>
+            <li>He has the highest base health of any class in TF2.</li>
+            <li>His sandwich can heal both himself and teammates.</li>
+          </ul>
+          <a href="{{ url_for('views.home') }}" class="btn btn-warning mt-3">← Back to Home</a>
+          <a href="{{ url_for('views.demoman') }}" class="btn btn-outline-secondary mt-3 float-start">
+            &larr; Previous
+          </a>
+          <a href="{{ url_for('views.engineer') }}" class="btn btn-outline-primary mt-3 float-end">
+            Next &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

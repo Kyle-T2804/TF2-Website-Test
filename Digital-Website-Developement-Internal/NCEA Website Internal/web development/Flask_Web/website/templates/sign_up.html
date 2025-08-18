@@ -1,0 +1,248 @@
+{% extends "template.html" %}
+{% block title %}Sign Up | TF2 Mercenary Database{% endblock %}
+
+{% block head %}
+<style>
+  /* Page-specific styles for the strength meter */
+  .pw-meter .progress { height: 8px; }
+  .pw-meter .progress-bar { transition: width .25s ease; }
+  .requirements li { margin-bottom: .25rem; }
+
+  /* Hover mechanics (subtle, no color highlight) */
+  @media (hover: hover) and (pointer: fine) {
+    .signup-card { transition: transform .25s ease, box-shadow .25s ease; }
+    .signup-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,.25)); }
+
+    .btn { transition: transform .2s ease, box-shadow .25s ease; }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,.25)); }
+    .btn:active:not(:disabled) { transform: translateY(0); box-shadow: var(--shadow, 0 4px 16px rgba(0,0,0,.15)); }
+
+    .input-group .btn i { transition: transform .2s ease; }
+    .input-group .btn:hover i { transform: scale(1.05); }
+
+    .form-text a { text-decoration: none; background-image: linear-gradient(currentColor, currentColor); background-size: 0 2px; background-repeat: no-repeat; background-position: 0 100%; transition: background-size .2s ease; }
+    .form-text a:hover, .form-text a:focus-visible { background-size: 100% 2px; }
+  }
+
+  /* Focus-visible accessibility (no hover color change) */
+  .btn:focus-visible, .form-control:focus-visible, .form-check-input:focus-visible {
+    outline: 3px solid var(--accent, #a73232);
+    outline-offset: 2px;
+  }
+  .form-control:focus {
+    border-color: var(--accent, #a73232);
+    box-shadow: 0 0 0 .2rem rgba(167,50,50,.25);
+  }
+  .form-control:hover {
+    border-color: inherit;
+    box-shadow: none;
+  }
+
+  /* Reduced motion: disable transforms */
+  @media (prefers-reduced-motion: reduce) {
+    .signup-card, .btn, .input-group .btn i { transition: none !important; transform: none !important; box-shadow: none !important; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+      <div class="card shadow-lg signup-card">
+        <div class="card-header bg-primary text-white text-center">
+          <h2 class="mb-0">Create your account</h2>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('views.sign_up') }}" novalidate id="signUpForm" autocomplete="on">
+            {# If you use Flask-WTF, include: {{ form.csrf_token }} #}
+
+            <!-- Email -->
+            <div class="mb-3">
+              <label for="email" class="form-label">Email address</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                class="form-control"
+                placeholder="e.g. alex@example.com"
+                inputmode="email"
+                autocomplete="email"
+                required
+              >
+              <div class="form-text">We'll never share your email.</div>
+            </div>
+
+            <!-- Username -->
+            <div class="mb-3">
+              <label for="username" class="form-label">Username</label>
+              <input
+                type="text"
+                id="username"
+                name="username"
+                class="form-control"
+                placeholder="Pick a unique name"
+                minlength="3"
+                maxlength="32"
+                autocomplete="username"
+                required
+              >
+            </div>
+
+            <!-- Password -->
+            <div class="mb-3">
+              <label for="password1" class="form-label">Password</label>
+              <div class="input-group">
+                <input
+                  type="password"
+                  id="password1"
+                  name="password1"
+                  class="form-control"
+                  placeholder="At least 8 characters"
+                  minlength="8"
+                  autocomplete="new-password"
+                  required
+                >
+                <button class="btn btn-outline-secondary" type="button" id="togglePw1" aria-label="Show password">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+
+              <!-- Strength meter -->
+              <div class="pw-meter mt-2">
+                <div class="progress">
+                  <div id="pwBar" class="progress-bar bg-danger" role="progressbar" style="width: 0%"></div>
+                </div>
+                <small id="pwHint" class="text-muted">Use upper, lower, number, and symbol.</small>
+              </div>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="mb-3">
+              <label for="password2" class="form-label">Confirm password</label>
+              <div class="input-group">
+                <input
+                  type="password"
+                  id="password2"
+                  name="password2"
+                  class="form-control"
+                  placeholder="Re-enter your password"
+                  minlength="8"
+                  autocomplete="new-password"
+                  required
+                >
+                <button class="btn btn-outline-secondary" type="button" id="togglePw2" aria-label="Show password">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+              <div id="matchHint" class="form-text text-danger d-none">Passwords do not match.</div>
+            </div>
+
+            <!-- Requirements -->
+            <div class="mb-3">
+              <ul class="requirements small text-muted mb-0">
+                <li>Minimum 8 characters</li>
+                <li>At least 1 uppercase and 1 lowercase letter</li>
+                <li>At least 1 number</li>
+                <li>At least 1 symbol (!@#$%^&*)</li>
+              </ul>
+            </div>
+
+            <!-- Terms -->
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" value="1" id="accept_terms" name="accept_terms" required>
+              <label class="form-check-label" for="accept_terms">
+                I agree to the Terms of Service and Privacy Policy.
+              </label>
+            </div>
+
+            <!-- Submit -->
+            <div class="d-grid">
+              <button class="btn btn-primary btn-lg" type="submit" id="submitBtn" disabled>Create account</button>
+            </div>
+          </form>
+          <div class="text-center mt-3">
+            <span>Already have an account? <a href="{{ url_for('views.login') }}">Log in here</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+  // Toggle visibility
+  function toggleVisibility(inputId, btnId) {
+    const input = document.getElementById(inputId);
+    const btn = document.getElementById(btnId);
+    btn.addEventListener('click', () => {
+      const isPw = input.type === 'password';
+      input.type = isPw ? 'text' : 'password';
+      const icon = btn.querySelector('i');
+      icon.classList.toggle('fa-eye');
+      icon.classList.toggle('fa-eye-slash');
+      btn.setAttribute('aria-label', isPw ? 'Hide password' : 'Show password');
+    });
+  }
+  toggleVisibility('password1', 'togglePw1');
+  toggleVisibility('password2', 'togglePw2');
+
+  // Strength meter
+  function scorePassword(pw) {
+    let score = 0;
+    if (!pw) return 0;
+    const sets = [
+      /[a-z]/,      // lower
+      /[A-Z]/,      // upper
+      /[0-9]/,      // number
+      /[^A-Za-z0-9]/ // symbol
+    ];
+    const lengthScore = Math.min(6, Math.floor(pw.length / 2)); // up to 6 pts
+    const variety = sets.reduce((acc, re) => acc + (re.test(pw) ? 1 : 0), 0); // 0..4
+    score = lengthScore + variety * 2; // max 14
+    return Math.min(14, score);
+  }
+
+  const pw1 = document.getElementById('password1');
+  const pw2 = document.getElementById('password2');
+  const pwBar = document.getElementById('pwBar');
+  const pwHint = document.getElementById('pwHint');
+  const matchHint = document.getElementById('matchHint');
+  const email = document.getElementById('email');
+  const username = document.getElementById('username');
+  const accept = document.getElementById('accept_terms');
+  const submitBtn = document.getElementById('submitBtn');
+
+  function updateStrength() {
+    const s = scorePassword(pw1.value);
+    const pct = Math.round((s / 14) * 100);
+    pwBar.style.width = pct + '%';
+    pwBar.classList.remove('bg-danger','bg-warning','bg-success');
+    if (pct < 40) pwBar.classList.add('bg-danger');
+    else if (pct < 75) pwBar.classList.add('bg-warning');
+    else pwBar.classList.add('bg-success');
+    pwHint.textContent = pct < 75 ? 'Tip: add upper/lower, number, and symbol.' : 'Strong password!';
+  }
+
+  function validateForm() {
+    const basicValid =
+      email.validity.valid &&
+      username.value.trim().length >= 3 &&
+      pw1.value.length >= 8 &&
+      pw2.value.length >= 8 &&
+      accept.checked;
+
+    const matches = pw1.value && pw2.value && pw1.value === pw2.value;
+    matchHint.classList.toggle('d-none', matches || !pw2.value);
+    submitBtn.disabled = !(basicValid && matches);
+  }
+
+  [pw1, pw2, email, username, accept].forEach(el => {
+    el.addEventListener('input', () => { updateStrength(); validateForm(); });
+  });
+  updateStrength(); validateForm();
+</script>
+{% endblock %}
+

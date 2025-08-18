@@ -1,0 +1,65 @@
+{% extends "template.html" %}
+{% block title %}Sniper | TF2 Mercenary Database{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row">
+    <div class="col-md-4 text-center">
+      <div class="card shadow-lg mb-4">
+        <img src="{{ url_for('static', filename='assets/img/sniper.jpg') }}" alt="Sniper" class="img-fluid rounded-top" style="max-width: 100%;">
+        <div class="card-body">
+          <h3 class="mt-2">Sniper</h3>
+          <span class="badge bg-warning mb-2 text-dark">Support</span>
+          <ul class="list-group class-info">
+            <li class="list-group-item"><strong>Health:</strong> 125 HP</li>
+            <li class="list-group-item"><strong>Abilities:</strong> Long-range Headshots</li>
+            <li class="list-group-item"><strong>Primary Weapon:</strong> Sniper Rifle</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Video Embed: Meet the Sniper -->
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h5 class="mb-3">Meet the Sniper (Video)</h5>
+          <div class="ratio ratio-16x9">
+            <iframe src="https://www.youtube.com/embed/9NZDwZbyDus" title="Meet the Sniper" allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card shadow-lg mb-4">
+        <div class="card-body">
+          <h4>Overview</h4>
+          <p>
+            The <strong>Sniper</strong> excels at eliminating key targets from a distance, controlling open areas and picking off enemies with precision headshots.
+          </p>
+          <h4>Background</h4>
+          <p>
+            The Sniper is an Australian marksman with a calm demeanor and a sharp eye. He prefers to stay out of the fray and take out enemies before they know what hit them.
+          </p>
+          <h4>Tips & Strategy</h4>
+          <ul>
+            <li>Stay in elevated or hidden positions for better sightlines.</li>
+            <li>Prioritize enemy Medics and Heavies for maximum impact.</li>
+            <li>Watch for enemy Spies who may try to sneak up on you.</li>
+          </ul>
+          <h4>Trivia</h4>
+          <ul>
+            <li>The Sniper is voiced by John Patrick Lowrie.</li>
+            <li>He carries a kukri for close encounters.</li>
+            <li>His jarate can douse enemies and reveal Spies.</li>
+          </ul>
+          <a href="{{ url_for('views.home') }}" class="btn btn-warning mt-3">← Back to Home</a>
+          <a href="{{ url_for('views.medic') }}" class="btn btn-outline-secondary mt-3 float-start">
+            &larr; Previous
+          </a>
+          <a href="{{ url_for('views.spy') }}" class="btn btn-outline-primary mt-3 float-end">
+            Next &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

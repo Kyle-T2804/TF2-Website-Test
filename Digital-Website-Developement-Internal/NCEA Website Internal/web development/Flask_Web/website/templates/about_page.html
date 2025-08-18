@@ -1,0 +1,231 @@
+{% extends "template.html" %}
+{% block title %}About | TF2 Mercenary Database{% endblock %}
+
+{% block head %}
+<style>
+  .about-hero {
+    background: linear-gradient(135deg, #a73232 0%, #ffc857 100%);
+    border-radius: 0 0 32px 32px;
+  }
+  .about-hero .brand-logo {
+    width: 84px; height: 84px;
+    border: 4px solid #232323;
+  }
+  .stat-card {
+    border: 2px solid #a73232;
+    border-radius: 16px;
+    background: #ffffffee;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,.15); }
+  .feature-icon {
+    width: 48px; height: 48px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 12px;
+    background: #ffc85722; color: #a73232;
+  }
+  .stack-badge {
+    border: 1.5px solid #a73232; color: #a73232; background: #fff;
+    border-radius: 999px; padding: .4rem .8rem; margin: .25rem;
+    display: inline-flex; align-items: center; gap: .4rem;
+  }
+  .faq .accordion-button:not(.collapsed) {
+    color: #a73232; background: #ffc85722;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="about-hero text-white text-center py-5">
+  <div class="container">
+    <img src="{{ url_for('static', filename='assets/siteicon.png') }}" alt="Site Icon" class="brand-logo rounded-circle shadow mb-3">
+    <h1 class="fw-bold mb-2">About TF2 Mercenary Database</h1>
+    <p class="lead mb-0">Fan-made, educational, and community-driven resource for every class in Team Fortress 2.</p>
+  </div>
+</section>
+
+<!-- Stats -->
+<section class="py-5">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-6 col-lg-3">
+        <div class="stat-card p-4 text-center h-100">
+          <div class="feature-icon mb-2"><i class="fa-solid fa-people-group"></i></div>
+          <div class="h2 mb-0 counter" data-target="{{ total_classes|default(9) }}">0</div>
+          <div class="text-muted">Classes</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card p-4 text-center h-100">
+          <div class="feature-icon mb-2"><i class="fa-solid fa-image"></i></div>
+          <div class="h2 mb-0 counter" data-target="{{ total_images|default(0) }}">0</div>
+          <div class="text-muted">Images Uploaded</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card p-4 text-center h-100">
+          <div class="feature-icon mb-2"><i class="fa-solid fa-user"></i></div>
+          <div class="h2 mb-0 counter" data-target="{{ total_users|default(0) }}">0</div>
+          <div class="text-muted">Community Members</div>
+        </div>
+      </div>
+      <div class="col-6 col-lg-3">
+        <div class="stat-card p-4 text-center h-100">
+          <div class="feature-icon mb-2"><i class="fa-solid fa-comments"></i></div>
+          <div class="h2 mb-0 counter" data-target="{{ total_comments|default(0) }}">0</div>
+          <div class="text-muted">Comments</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="pb-5">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card shadow h-100">
+          <div class="card-body">
+            <div class="feature-icon mb-3"><i class="fa-solid fa-book"></i></div>
+            <h5 class="fw-bold">Class Wiki</h5>
+            <p class="text-muted mb-0">Detailed pages for each mercenary, including background, tips, and trivia.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card shadow h-100">
+          <div class="card-body">
+            <div class="feature-icon mb-3"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+            <h5 class="fw-bold">Community Gallery</h5>
+            <p class="text-muted mb-0">Upload images with validation and organized storage. Built for reliability.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card shadow h-100">
+          <div class="card-body">
+            <div class="feature-icon mb-3"><i class="fa-solid fa-user-shield"></i></div>
+            <h5 class="fw-bold">Secure Accounts</h5>
+            <p class="text-muted mb-0">Login with username or email, protected by password hashing and safe sessions.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tech Stack -->
+<section class="py-5 bg-light rounded">
+  <div class="container">
+    <h4 class="fw-bold mb-3">Tech Stack</h4>
+    <div>
+      <span class="stack-badge"><i class="fa-brands fa-python"></i> Flask</span>
+      <span class="stack-badge"><i class="fa-brands fa-bootstrap"></i> Bootstrap 5</span>
+      <span class="stack-badge"><i class="fa-solid fa-database"></i> SQLAlchemy</span>
+      <span class="stack-badge"><i class="fa-solid fa-images"></i> Pillow</span>
+      <span class="stack-badge"><i class="fa-solid fa-shield-halved"></i> Werkzeug Security</span>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="py-5 faq">
+  <div class="container">
+    <h4 class="fw-bold mb-3">FAQ</h4>
+    <div class="accordion" id="faqAccordion">
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="q1">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a1">
+            Can I log in with email or username?
+          </button>
+        </h2>
+        <div id="a1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            Yes. The login supports both username and email for convenience and accessibility.
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="q2">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a2">
+            Why did my image fail to upload?
+          </button>
+        </h2>
+        <div id="a2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            The gallery validates file size and type. Ensure it’s within limits and a supported format (e.g., JPG/PNG).
+          </div>
+        </div>
+      </div>
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="q3">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a3">
+            Where are gallery images stored?
+          </button>
+        </h2>
+        <div id="a3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">
+            Images are saved under static/gallery with automatic directory creation for portability across devices.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Credits -->
+<section class="pb-5">
+  <div class="container">
+    <div class="card shadow">
+      <div class="card-body">
+        <h4 class="fw-bold">Credits & Acknowledgements</h4>
+        <ul class="mb-3">
+          <li>Created by <strong>Kyle</strong> for NCEA Web Development Internal</li>
+          <li>TF2 and all related assets &copy; Valve Corporation</li>
+          <li>Built using Flask, Bootstrap, SQLAlchemy, and community resources</li>
+        </ul>
+        <p class="text-muted mb-0">This fan page is not affiliated with Valve. For educational purposes only.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="py-5 text-center">
+  <div class="container">
+    <h4 class="fw-bold mb-2">Have ideas or found an issue?</h4>
+    <p class="text-muted mb-4">Reach out and help improve the project.</p>
+    <a href="{{ url_for('views.contact') }}" class="btn btn-warning btn-lg fw-bold">
+      <i class="fa-solid fa-envelope me-2"></i>Contact & Feedback
+    </a>
+  </div>
+</section>
+{% endblock %}
+
+{% block javascript %}
+<script>
+  // Stat counters
+  const counters = document.querySelectorAll('.counter');
+  const opts = { threshold: 0.4 };
+  const animateCounter = (el) => {
+    const target = +el.dataset.target || 0;
+    const step = Math.max(1, Math.floor(target / 60));
+    let current = 0;
+    const tick = () => {
+      current += step;
+      if (current >= target) { el.textContent = target; return; }
+      el.textContent = current;
+      requestAnimationFrame(tick);
+    };
+    tick();
+  };
+  const observer = new IntersectionObserver((entries, obs) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { animateCounter(e.target); obs.unobserve(e.target); }
+    });
+  }, opts);
+  counters.forEach(c => observer.observe(c));
+</script>
+{% endblock %}
