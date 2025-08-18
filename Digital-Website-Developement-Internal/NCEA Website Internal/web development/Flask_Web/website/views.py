@@ -57,29 +57,12 @@ def home():
     return render_template("home.html", user=current_user)
 
 # Contact page route
-@views.route("/contact", methods=['POST', 'GET'])
-@login_required
+@views.route("/contact", methods=['GET'])
 def contact():
-    """
-    Handles displaying and posting comments on the contact page.
-    Uses POST-Redirect-GET to prevent duplicate submissions on refresh.
-    """
     _seed_default_tags()
-    notes = (Note.query
-             .order_by(Note.created_at.desc())
-             .all())
+    # Pinned first, then newest
+    notes = Note.query.order_by(Note.pinned.desc(), Note.created_at.desc()).all()
     all_tags = Tag.query.order_by(Tag.name.asc()).all()
-    if request.method == 'POST':
-        note = request.form.get('note')
-        if len(note) < 1:
-            flash('Comment field cannot be empty!')
-        else:
-            new_note = Note(data=note, user_id=current_user.id)
-            db.session.add(new_note)
-            db.session.commit()
-            flash('Comment Added!', category='success')
-        # Redirect to prevent duplicate submissions on refresh
-        return redirect(url_for('views.contact'))
     return render_template("contact.html", user=current_user, notes=notes, all_tags=all_tags)
 
 # Add note route (AJAX)
@@ -120,20 +103,30 @@ def add_note():
 @views.route("/delete-note", methods=['POST'])
 @login_required
 def delete_note():
-    """
-    Deletes a note/comment via AJAX.
-    Only allows deletion if the current user owns the note.
-    """
     data = request.get_json(silent=True) or {}
     note_id = data.get('noteId') or request.form.get('noteId')
     note = Note.query.get(note_id)
     if not note:
         return jsonify(success=False, message='Not found'), 404
-    if note.user_id != current_user.id:
+    # Owner can delete any; moderators/admins can delete others; authors can delete their own
+    if not current_user.can_delete_note(note):
         return jsonify(success=False, message='Forbidden'), 403
     db.session.delete(note)
     db.session.commit()
     return jsonify(success=True)
+
+# NEW: Pin/Unpin (Owner only)
+@views.route('/notes/<int:note_id>/pin', methods=['POST'])
+@login_required
+def pin_note(note_id):
+    if not current_user.is_owner:
+        return jsonify(success=False, message='Forbidden'), 403
+    data = request.get_json(silent=True) or {}
+    desired = bool(data.get('pinned', True))
+    note = Note.query.get_or_404(note_id)
+    note.pinned = desired
+    db.session.commit()
+    return jsonify(success=True, pinned=note.pinned)
 
 # Individual class page routes
 @views.route('/scout')
@@ -256,7 +249,7 @@ def sign_up():
             return redirect(url_for('views.sign_up'))
 
         if not valid_password(password1):
-            flash('Password too weak. Include upper/lower, number, and symbol (min 8).', category='error')
+            flash('Password must be at least 6 characters.', category='error')
             return redirect(url_for('views.sign_up'))
 
         # Uniqueness

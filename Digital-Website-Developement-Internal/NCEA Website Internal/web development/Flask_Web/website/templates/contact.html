@@ -86,6 +86,18 @@
   .theme-dark .action:hover, .theme-dark .action.upvoted { color: #ffcf6a; }
   .theme-dark .feed-empty { color: rgba(255,255,255,.65); }
 
+  /* Role badges */
+  .role-badge { display:inline-flex; align-items:center; gap:.35rem; border-radius:999px; padding:.1rem .5rem; font-size:.75rem; font-weight:700; }
+  .role-owner { background:#3b1a1a; color:#ffcf6a; border:1px solid #ffcf6a; }
+  .role-admin { background:#1a2b3b; color:#8bd3ff; border:1px solid #8bd3ff; }
+  .role-moderator { background:#1a3b22; color:#7dffb0; border:1px solid #7dffb0; }
+  .role-member { background:#2a2a2a; color:#ddd; border:1px solid #666; }
+
+  /* Pinned highlight */
+  .comment.pinned { background: linear-gradient(0deg, rgba(255,200,87,.12), rgba(255,200,87,.12)); }
+  .pinned-label { font-size:.8rem; color:#a06a00; display:inline-flex; align-items:center; gap:.35rem; margin-left:.5rem; }
+  .theme-dark .pinned-label { color:#ffcf6a; }
+
   @media (max-width: 575.98px){
     .composer .actions { gap: .25rem; }
     .composer .actions .btn { padding: .35rem .5rem; }
@@ -169,6 +181,18 @@
                     <div class="meta">
                       <span class="author">{{ author_name }}</span>
                       <span class="time" data-time="{{ created.isoformat() if created else '' }}">· {{ created.strftime('%Y-%m-%d %H:%M') if created else 'just now' }}</span>
+
+                      {# Role badge #}
+                      {% if note.author %}
+                        {% set r = note.author.role or 'member' %}
+                        {% set title = note.author.display_title %}
+                        <span class="role-badge role-{{ r }}">{{ title }}</span>
+                      {% endif %}
+
+                      {# Pinned marker #}
+                      {% if note.pinned %}
+                        <span class="pinned-label"><i class="fa-solid fa-thumbtack"></i> Pinned</span>
+                      {% endif %}
                     </div>
                     <div class="content">{{ body }}</div>
 
@@ -186,11 +210,22 @@
                         <i class="fa-regular fa-thumbs-up"></i>
                         <span class="count">{{ note.like_count if note.like_count is defined else 0 }}</span>
                       </div>
-                      {% if current_user.is_authenticated and (note.user_id is defined and note.user_id == current_user.id) %}
-                      <div class="action delete" role="button" tabindex="0" aria-label="Delete" onclick="deleteNote({{ note.id }})">
-                        <i class="fa-regular fa-trash-can"></i> Delete
-                      </div>
+
+                      {# Owner actions: pin/unpin + delete any #}
+                      {% if current_user.is_authenticated and current_user.is_owner %}
+                        <div class="action" role="button" tabindex="0" aria-label="Pin/Unpin"
+                             onclick="togglePin({{ note.id }}, {{ 'true' if not note.pinned else 'false' }})">
+                          <i class="fa-solid fa-thumbtack"></i> {{ 'Pin' if not note.pinned else 'Unpin' }}
+                        </div>
+                        <div class="action delete" role="button" tabindex="0" aria-label="Delete" onclick="deleteNote({{ note.id }})">
+                          <i class="fa-regular fa-trash-can"></i> Delete
+                        </div>
+                      {% elif current_user.is_authenticated and note.user_id == current_user.id %}
+                        <div class="action delete" role="button" tabindex="0" aria-label="Delete" onclick="deleteNote({{ note.id }})">
+                          <i class="fa-regular fa-trash-can"></i> Delete
+                        </div>
                       {% endif %}
+
                       <div class="action share" role="button" tabindex="0" aria-label="Share">
                         <i class="fa-regular fa-share-from-square"></i> Share
                       </div>
@@ -342,5 +377,20 @@
     }).then(r=>{ if(r.ok) location.reload(); });
   }
   window.deleteNote = deleteNote;
+
+  // Pin/Unpin (Owner)
+  async function togglePin(id, pinned){
+    try {
+      const res = await fetch(`/notes/${id}/pin`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        credentials:'same-origin',
+        body: JSON.stringify({ pinned })
+      });
+      if (res.ok) location.reload();
+      else alert('Failed to update pin.');
+    } catch(_) { alert('Network error.'); }
+  }
+  window.togglePin = togglePin;
 </script>
 {% endblock %}
