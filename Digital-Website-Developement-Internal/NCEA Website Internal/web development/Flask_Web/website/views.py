@@ -1,14 +1,14 @@
 from flask import Blueprint, render_template, url_for, request, flash, redirect, jsonify, current_app
 from flask_login import login_user, login_required, logout_user, current_user
-from .models import User, Note, GalleryImage
+from .models import User, Note, GalleryImage, Tag
 from . import db
-import json
-import os
 from werkzeug.utils import secure_filename
 from datetime import datetime
-import pytz
 from werkzeug.security import generate_password_hash
 import re
+import pytz
+import os
+import json
 
 # Set up the Blueprint for views
 views = Blueprint("views", __name__)
@@ -35,6 +35,19 @@ def valid_password(pw: str) -> bool:
     """
     return len(pw) >= 6  # Only require 6 or more characters
 
+def _seed_default_tags():
+    defaults = [
+        ('Question', 'question'),
+        ('Feedback', 'feedback'),
+        ('Bug', 'bug'),
+        ('Suggestion', 'suggestion'),
+        ('Off-topic', 'off-topic'),
+    ]
+    if Tag.query.count() == 0:
+        for name, slug in defaults:
+            db.session.add(Tag(name=name, slug=slug))
+        db.session.commit()
+
 # Home page route
 @views.route("/")
 @views.route("/home")
@@ -51,6 +64,11 @@ def contact():
     Handles displaying and posting comments on the contact page.
     Uses POST-Redirect-GET to prevent duplicate submissions on refresh.
     """
+    _seed_default_tags()
+    notes = (Note.query
+             .order_by(Note.created_at.desc())
+             .all())
+    all_tags = Tag.query.order_by(Tag.name.asc()).all()
     if request.method == 'POST':
         note = request.form.get('note')
         if len(note) < 1:
@@ -62,7 +80,41 @@ def contact():
             flash('Comment Added!', category='success')
         # Redirect to prevent duplicate submissions on refresh
         return redirect(url_for('views.contact'))
-    return render_template("contact.html", user=current_user)
+    return render_template("contact.html", user=current_user, notes=notes, all_tags=all_tags)
+
+# Add note route (AJAX)
+@views.route('/add-note', methods=['POST'])
+@login_required
+def add_note():
+    # Accept JSON or form POST
+    data = request.get_json(silent=True) or {}
+    content = (data.get('content') or request.form.get('content') or request.form.get('note') or '').strip()
+    tags_raw = data.get('tags') or request.form.get('tags') or ''
+    if isinstance(tags_raw, str):
+        tag_slugs = [s.strip() for s in tags_raw.split(',') if s.strip()]
+    else:
+        tag_slugs = list(tags_raw)  # assume list
+
+    if len(content) < 3:
+        msg = 'Comment must be at least 3 characters.'
+        if request.is_json:
+            return jsonify(success=False, message=msg), 400
+        flash(msg, 'error')
+        return redirect(url_for('views.contact'))
+
+    # Limit to 3 tags (like Discord forums)
+    tag_slugs = tag_slugs[:3]
+    selected_tags = Tag.query.filter(Tag.slug.in_(tag_slugs)).all()
+
+    note = Note(content=content, author=current_user)
+    note.tags = selected_tags
+    db.session.add(note)
+    db.session.commit()
+
+    if request.is_json:
+        return jsonify(success=True, id=note.id)
+    flash('Comment posted.', 'success')
+    return redirect(url_for('views.contact'))
 
 # Delete note route (AJAX)
 @views.route("/delete-note", methods=['POST'])
@@ -72,13 +124,16 @@ def delete_note():
     Deletes a note/comment via AJAX.
     Only allows deletion if the current user owns the note.
     """
-    note = json.loads(request.data)
-    noteId = note['noteId']
-    note = Note.query.get(noteId)
-    if note and note.user_id == current_user.id:
-        db.session.delete(note)
-        db.session.commit()
-    return jsonify({})
+    data = request.get_json(silent=True) or {}
+    note_id = data.get('noteId') or request.form.get('noteId')
+    note = Note.query.get(note_id)
+    if not note:
+        return jsonify(success=False, message='Not found'), 404
+    if note.user_id != current_user.id:
+        return jsonify(success=False, message='Forbidden'), 403
+    db.session.delete(note)
+    db.session.commit()
+    return jsonify(success=True)
 
 # Individual class page routes
 @views.route('/scout')

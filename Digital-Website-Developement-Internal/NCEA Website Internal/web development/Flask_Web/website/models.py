@@ -1,8 +1,14 @@
 from . import db
 from flask_login import UserMixin
-from sqlalchemy.sql import func
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+
+# Association table for Note <-> Tag (many-to-many)
+note_tag = db.Table(
+    'note_tag',
+    db.Column('note_id', db.Integer, db.ForeignKey('note.id'), primary_key=True),
+    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'), primary_key=True),
+)
 
 # User model: stores info about each person who signs up.
 class User(db.Model, UserMixin):
@@ -15,7 +21,7 @@ class User(db.Model, UserMixin):
     last_login = db.Column(db.DateTime)  # Last time the user logged in
     is_active = db.Column(db.Boolean, default=True, nullable=False)  # Is the user active?
     email_verified = db.Column(db.Boolean, default=False, nullable=False)  # Is the user's email verified?
-    notes = db.relationship('Note')  # All notes this user has made
+    notes = db.relationship('Note', backref='author', lazy=True)  # All notes this user has made
     gallery_images = db.relationship('GalleryImage')  # All images this user has uploaded
 
     def set_password(self, password):
@@ -28,10 +34,14 @@ class User(db.Model, UserMixin):
 
 # Note model: stores each note a user writes.
 class Note(db.Model):
+    __tablename__ = 'note'
     id = db.Column(db.Integer, primary_key=True)  # Note's ID number
-    data = db.Column(db.String(10000))  # What the note says
-    date = db.Column(db.DateTime(timezone=True), default=func.now())  # When the note was made
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))  # Which user made the note
+    content = db.Column(db.Text, nullable=False)  # What the note says
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)  # When the note was made
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Which user made the note
+    # Tags on the note
+    tags = db.relationship('Tag', secondary=note_tag, lazy='subquery',
+                           backref=db.backref('notes', lazy=True))
 
 # GalleryImage model: stores images uploaded by users.
 class GalleryImage(db.Model):
@@ -41,3 +51,9 @@ class GalleryImage(db.Model):
     upload_time = db.Column(db.DateTime, default=db.func.current_timestamp())  # When the image was uploaded
     description = db.Column(db.String(250))  # Description of the image
     uploader = db.relationship('User')  # The user who uploaded the image
+
+class Tag(db.Model):
+    __tablename__ = 'tag'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(40), unique=True, nullable=False)
+    slug = db.Column(db.String(40), unique=True, nullable=False, index=True)

@@ -1,35 +1,210 @@
 {% extends "template.html" %}
 {% block title %}Contact | TF2 Mercenary Database{% endblock %}
 
+{% block head %}
+<style>
+  /* Container/card */
+  .discussion-card { border: 0; border-radius: 18px; overflow: hidden; }
+  .discussion-header {
+    background: linear-gradient(90deg, #ffc857 0%, #a73232 100%);
+    color: #fff; padding: 1rem 1.25rem;
+  }
+  .discussion-header h2 { margin: 0; font-weight: 800; letter-spacing: .2px; }
+  .discussion-sub { opacity: .9; font-size: .95rem; }
+
+  /* Tabs (Top/New) */
+  .feed-tabs { border-bottom: 1px solid rgba(0,0,0,.08); padding: .25rem .75rem 0; }
+  .feed-tabs .nav-link { color: #555; font-weight: 600; border: 0; }
+  .feed-tabs .nav-link.active { color: #a73232; border-bottom: 3px solid #ffc857; border-radius: 0; }
+
+  /* Composer */
+  .composer { display: flex; gap: .75rem; padding: 1rem 1.25rem 0; }
+  .avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: grid; place-items: center; font-weight: 800;
+    background: #ffe39a; color: #5b3000; border: 2px solid #ffc857;
+    user-select: none;
+  }
+  .composer .box {
+    flex: 1; background: #fff; border-radius: 12px; border: 1px solid rgba(0,0,0,.08);
+    padding: .75rem .85rem;
+  }
+  .composer textarea {
+    width: 100%; min-height: 64px; max-height: 320px; resize: none;
+    border: 0; outline: 0; background: transparent;
+  }
+  .composer .row2 {
+    display: flex; justify-content: space-between; align-items: center; margin-top: .5rem;
+  }
+  .composer .actions { display: flex; gap: .5rem; }
+  .composer .actions .btn { padding: .38rem .65rem; }
+  .char-counter { font-size: .85rem; color: rgba(0,0,0,.55); }
+
+  /* Feed items */
+  .comment { display: flex; gap: .75rem; padding: 1rem 1.25rem; border-bottom: 1px solid rgba(0,0,0,.06); }
+  .comment .c-body { flex: 1; min-width: 0; }
+  .comment .meta { display:flex; gap:.5rem; align-items:center; font-size:.9rem; color: rgba(0,0,0,.6); }
+  .comment .author { font-weight: 700; color: #222; }
+  .comment .time { white-space: nowrap; }
+  .comment .content { margin-top: .25rem; white-space: pre-wrap; word-break: break-word; }
+  .comment .toolbar {
+    display:flex; gap:.75rem; align-items:center; margin-top:.5rem; font-size:.95rem;
+  }
+  .action { display:flex; align-items:center; gap:.35rem; color:#616161; cursor:pointer; user-select:none; }
+  .action:hover { color: #a73232; }
+  .action .count { font-weight: 600; }
+  .action.upvoted { color: #a73232; }
+
+  /* Empty state */
+  .feed-empty { text-align:center; color: rgba(0,0,0,.55); padding: 2rem 1rem; }
+
+  /* Tag chips */
+  .tag-chip {
+    display:inline-flex; align-items:center; gap:.4rem;
+    padding:.2rem .6rem; border-radius:999px; font-weight:600;
+    border:1px solid rgba(0,0,0,.12); background:#fff; color:#5a5a5a;
+    cursor:pointer; user-select:none; transition:transform .1s ease, background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .tag-chip:hover { transform: translateY(-1px); }
+  .tag-chip.is-selected { background:#ffe39a; color:#5b3000; border-color:#ffc857; }
+  .tag-row { display:flex; flex-wrap:wrap; gap:.5rem; }
+  .tag-filter-bar { padding:.75rem 1.25rem; border-bottom:1px solid rgba(0,0,0,.06); display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+  .tag-filter-label { font-weight:700; margin-right:.25rem; }
+
+  /* Dark mode */
+  .theme-dark .discussion-header { background: linear-gradient(90deg,#ffcf6a 0%,#d24a4a 100%); color:#111; }
+  .theme-dark .feed-tabs { border-bottom-color: rgba(255,255,255,.1); }
+  .theme-dark .feed-tabs .nav-link { color: rgba(255,255,255,.8); }
+  .theme-dark .feed-tabs .nav-link.active { color: #ffcf6a; border-bottom-color: #ffcf6a; }
+  .theme-dark .composer .box { background: #1e1e1e; border-color: rgba(255,255,255,.08); }
+  .theme-dark .composer textarea { color: #f5f5f5; }
+  .theme-dark .char-counter { color: rgba(255,255,255,.7); }
+  .theme-dark .comment { border-bottom-color: rgba(255,255,255,.08); }
+  .theme-dark .comment .author { color: #fff; }
+  .theme-dark .comment .meta { color: rgba(255,255,255,.7); }
+  .theme-dark .action { color: rgba(255,255,255,.75); }
+  .theme-dark .action:hover, .theme-dark .action.upvoted { color: #ffcf6a; }
+  .theme-dark .feed-empty { color: rgba(255,255,255,.65); }
+
+  @media (max-width: 575.98px){
+    .composer .actions { gap: .25rem; }
+    .composer .actions .btn { padding: .35rem .5rem; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-5">
   <div class="row justify-content-center">
-    <div class="col-md-8">
-      <div class="card shadow-lg">
-        <div class="card-header bg-warning text-dark text-center">
-          <h2>Contact & Comments</h2>
+    <div class="col-lg-8 col-md-10">
+      <div class="card discussion-card shadow-sm">
+        <div class="discussion-header">
+          <h2 class="mb-1"><i class="fa-solid fa-comments me-2"></i>Discussion</h2>
+          <div class="discussion-sub">Join the conversation. Be respectful and stay on topic.</div>
         </div>
-        <div class="card-body">
-          <!-- Comments Section -->
-          <ul class="list-group list-group-flush mb-4" id="notes">
-            {% for note in user.notes %}
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <span>{{ note.data }}</span>
-                <button type="button" class="btn-close" onClick="deleteNote({{ note.id }})" title="Delete Comment"></button>
-              </li>
+
+        <!-- Filter bar (Discord-like tag filter) -->
+        <div class="tag-filter-bar" id="tagFilterBar">
+          <span class="tag-filter-label">Filter:</span>
+          <span class="tag-chip is-selected" data-filter="all">All</span>
+          {% for t in all_tags %}
+            <span class="tag-chip" data-filter="{{ t.slug }}">{{ t.name }}</span>
+          {% endfor %}
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs feed-tabs" id="feedTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-sort="top" type="button">Top</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" data-sort="new" type="button">New</button>
+          </li>
+        </ul>
+
+        <div class="card-body p-0">
+          {% include "_flash.html" %}
+
+          <!-- Composer -->
+          <div class="composer">
+            <div class="avatar" aria-hidden="true">
+              {{ (current_user.username[:1] if current_user.is_authenticated else 'G')|upper }}
+            </div>
+            <form id="noteForm" method="POST" class="box w-100" novalidate action="{{ url_for('views.add_note') }}">
+              <textarea id="noteInput" name="content" maxlength="250" placeholder="Share your thoughts..." required></textarea>
+
+              <!-- Tag Selector (choose up to 3, like Discord forums) -->
+              <div class="mt-2">
+                <div class="small mb-1 fw-semibold">Tags (up to 3):</div>
+                <div class="tag-row" id="composerTags">
+                  {% for t in all_tags %}
+                    <span class="tag-chip" data-slug="{{ t.slug }}">{{ t.name }}</span>
+                  {% endfor %}
+                </div>
+                <input type="hidden" name="tags" id="composerTagsInput" value="">
+              </div>
+
+              <div class="row2">
+                <div class="char-counter"><span id="charCount">0</span>/250</div>
+                <div class="actions">
+                  <button type="submit" id="postBtn" class="btn btn-primary btn-sm" disabled>Post</button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Feed -->
+          {% set notes_list = notes if notes is defined else (user.notes if user and user.notes is not none else []) %}
+          <div id="feed">
+            {% if notes_list %}
+              {% for note in notes_list %}
+                {% set author_name = (note.author.username if note.author else (note.user.username if note.user else 'User')) %}
+                {% set body = note.content|default(note.data, true) %}
+                {% set created = note.created_at|default(note.date, true) %}
+                {% set tag_list = note.tags if note.tags is defined else [] %}
+                {% set tag_slugs = tag_list|map(attribute='slug')|list %}
+                <div class="comment" data-id="{{ note.id }}" data-iso="{{ created.isoformat() if created else '' }}" data-tags="{{ ','.join(tag_slugs) }}" data-score="{{ note.score if note.score is defined else 0 }}">
+                  <div class="avatar" aria-hidden="true">{{ author_name[:1]|upper }}</div>
+                  <div class="c-body">
+                    <div class="meta">
+                      <span class="author">{{ author_name }}</span>
+                      <span class="time" data-time="{{ created.isoformat() if created else '' }}">· {{ created.strftime('%Y-%m-%d %H:%M') if created else 'just now' }}</span>
+                    </div>
+                    <div class="content">{{ body }}</div>
+
+                    <!-- Visible tags on the post -->
+                    {% if tag_list %}
+                      <div class="mt-2 tag-row">
+                        {% for tg in tag_list %}
+                          <span class="tag-chip" tabindex="-1">{{ tg.name }}</span>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+
+                    <div class="toolbar">
+                      <div class="action upvote" role="button" tabindex="0" aria-label="Upvote">
+                        <i class="fa-regular fa-thumbs-up"></i>
+                        <span class="count">{{ note.like_count if note.like_count is defined else 0 }}</span>
+                      </div>
+                      {% if current_user.is_authenticated and (note.user_id is defined and note.user_id == current_user.id) %}
+                      <div class="action delete" role="button" tabindex="0" aria-label="Delete" onclick="deleteNote({{ note.id }})">
+                        <i class="fa-regular fa-trash-can"></i> Delete
+                      </div>
+                      {% endif %}
+                      <div class="action share" role="button" tabindex="0" aria-label="Share">
+                        <i class="fa-regular fa-share-from-square"></i> Share
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
             {% else %}
-              <li class="list-group-item text-center text-muted">No comments yet. Be the first to comment!</li>
-            {% endfor %}
-          </ul>
-          <!-- Add Comment Form -->
-          <form method="POST">
-            <div class="mb-3">
-              <textarea name="note" id="note" class="form-control" rows="3" placeholder="Add your comment..." maxlength="250" required></textarea>
-            </div>
-            <div class="text-center">
-              <button type="submit" class="btn btn-primary">Add Comment</button>
-            </div>
-          </form>
+              <div class="feed-empty">
+                <i class="fa-regular fa-comment-dots fa-2x mb-2" aria-hidden="true"></i>
+                <div>No comments yet — be the first to comment.</div>
+              </div>
+            {% endif %}
+          </div>
         </div>
       </div>
     </div>
@@ -39,16 +214,133 @@
 
 {% block javascript %}
 <script>
-  function deleteNote(noteId) {
-    fetch("/delete-note", {
-      method: "POST",
-      body: JSON.stringify({ noteId: noteId }),
-      headers: {
-        "Content-Type": "application/json"
+  // Auto-resize + enable button
+  const ta = document.getElementById('noteInput');
+  const postBtn = document.getElementById('postBtn');
+  const charCount = document.getElementById('charCount');
+  const form = document.getElementById('noteForm');
+  function autosize() { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,320)+'px'; }
+  function updateUI() { const len=(ta.value||'').trim().length; charCount.textContent=len; postBtn.disabled=len<3; autosize(); }
+  if (ta) { ta.addEventListener('input', updateUI); updateUI(); }
+
+  // Composer tag selection (max 3)
+  const compWrap = document.getElementById('composerTags');
+  const compHidden = document.getElementById('composerTagsInput');
+  function updateHidden() {
+    const slugs = Array.from(compWrap.querySelectorAll('.tag-chip.is-selected')).map(x => x.dataset.slug);
+    compHidden.value = slugs.join(',');
+  }
+  if (compWrap) {
+    compWrap.addEventListener('click', (e) => {
+      const chip = e.target.closest('.tag-chip');
+      if (!chip) return;
+      if (chip.classList.contains('is-selected')) {
+        chip.classList.remove('is-selected');
+      } else {
+        const cur = compWrap.querySelectorAll('.tag-chip.is-selected').length;
+        if (cur >= 3) return; // enforce limit
+        chip.classList.add('is-selected');
       }
-    }).then((_res) => {
-      window.location.reload();
+      updateHidden();
     });
   }
+
+  // Submit comment via JSON; fallback to normal POST
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const content = (ta.value||'').trim();
+      if (content.length < 3) return;
+      const tags = compHidden.value ? compHidden.value.split(',') : [];
+      try {
+        const res = await fetch(form.action || '/add-note', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          credentials:'same-origin',
+          body: JSON.stringify({ content, tags })
+        });
+        if (res.ok) { location.reload(); return; }
+      } catch(_) {}
+      form.submit(); // fallback
+    });
+  }
+
+  // Upvote local toggle
+  function upvoteToggle(el, id) {
+    const key='upvote-'+id; const was=localStorage.getItem(key)==='1';
+    const countEl=el.querySelector('.count'); const cur=parseInt(countEl.textContent||'0',10);
+    countEl.textContent = String(Math.max(0, cur + (was?-1:1)));
+    el.classList.toggle('upvoted', !was);
+    localStorage.setItem(key, was?'0':'1');
+  }
+  document.querySelectorAll('.comment .upvote').forEach(el=>{
+    const id=el.closest('.comment').dataset.id, key='upvote-'+id;
+    if (localStorage.getItem(key)==='1') el.classList.add('upvoted');
+    el.addEventListener('click', ()=>upvoteToggle(el,id));
+    el.addEventListener('keypress', e=>{ if(e.key==='Enter'||e.key===' ') upvoteToggle(el,id); });
+  });
+
+  // Sorting Top/New
+  const tabs=document.getElementById('feedTabs');
+  function sortFeed(mode){
+    const feed=document.getElementById('feed');
+    const items=[...feed.querySelectorAll('.comment')];
+    const scored=items.map(n=>{
+      const iso=n.dataset.iso, ts=iso?new Date(iso).getTime():0;
+      const likes=parseInt(n.querySelector('.upvote .count')?.textContent||'0',10);
+      return {node:n, ts, likes};
+    });
+    if (mode==='top') scored.sort((a,b)=>b.likes-a.likes||b.ts-a.ts);
+    else scored.sort((a,b)=>b.ts-a.ts);
+    scored.forEach(s=>feed.appendChild(s.node));
+  }
+  if (tabs) {
+    tabs.addEventListener('click', e=>{
+      const btn=e.target.closest('.nav-link'); if(!btn) return;
+      tabs.querySelectorAll('.nav-link').forEach(n=>n.classList.toggle('active', n===btn));
+      sortFeed(btn.dataset.sort);
+    });
+    sortFeed('top');
+  }
+
+  // Tag filter (Discord-like)
+  const filterBar=document.getElementById('tagFilterBar');
+  function applyFilter() {
+    const active = [...filterBar.querySelectorAll('.tag-chip.is-selected')].map(c=>c.dataset.filter).filter(f=>f!=='all');
+    const feed=document.getElementById('feed');
+    [...feed.querySelectorAll('.comment')].forEach(n=>{
+      const tags=(n.dataset.tags||'').split(',').filter(Boolean);
+      const show = active.length===0 ? true : active.some(a=>tags.includes(a)); // OR filter
+      n.style.display = show ? '' : 'none';
+    });
+  }
+  if (filterBar) {
+    filterBar.addEventListener('click', (e)=>{
+      const chip=e.target.closest('.tag-chip'); if(!chip) return;
+      const isAll = chip.dataset.filter==='all';
+      if (isAll) {
+        filterBar.querySelectorAll('.tag-chip').forEach(c=>c.classList.remove('is-selected'));
+        chip.classList.add('is-selected');
+      } else {
+        const allChip = filterBar.querySelector('[data-filter="all"]');
+        allChip.classList.remove('is-selected');
+        chip.classList.toggle('is-selected');
+        // if none selected, fall back to All
+        const any = filterBar.querySelectorAll('.tag-chip.is-selected:not([data-filter="all"])').length>0;
+        if (!any) allChip.classList.add('is-selected');
+      }
+      applyFilter();
+    });
+  }
+  applyFilter();
+
+  // Delete
+  function deleteNote(noteId) {
+    fetch('/delete-note', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ noteId })
+    }).then(r=>{ if(r.ok) location.reload(); });
+  }
+  window.deleteNote = deleteNote;
 </script>
 {% endblock %}
