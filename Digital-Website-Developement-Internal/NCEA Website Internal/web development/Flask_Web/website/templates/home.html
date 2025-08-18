@@ -4,13 +4,10 @@
 {% block content %}
 <!-- Hero Header -->
 <header class="masthead text-center text-white py-5 position-relative overflow-hidden">
-    <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(135deg, #a73232 0%, #ffc857 100%); clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);"></div>
+    <div class="masthead-background"></div>
     <div class="masthead-content position-relative">
         <div class="container px-5">
-            <img src="{{ url_for('static', filename='assets/siteicon.png') }}" 
-                 alt="TF2 Logo" 
-                 width="120" height="120" 
-                 class="mb-4 rounded-circle border border-4 border-warning shadow-lg animate__animated animate__bounceIn">
+            <!-- removed logo image -->
             <h1 class="masthead-heading mb-3 display-3 fw-bold text-shadow animate__animated animate__fadeInDown">
                 TF2 Mercenary Database
             </h1>
@@ -19,7 +16,8 @@
                 Explore detailed info, images, and community comments for every Team Fortress 2 class.
             </p>
             <a href="#mercs" 
-               class="btn btn-warning btn-lg fw-bold shadow-lg px-5 py-3 animate__animated animate__pulse animate__infinite">
+               class="btn btn-warning btn-lg fw-bold shadow-lg px-5 py-3 animate__animated animate__pulse animate__infinite browse-btn"
+               aria-label="Browse Mercenaries">
                 <i class="fas fa-chevron-down me-2"></i>Browse Mercenaries
             </a>
         </div>
@@ -31,12 +29,12 @@
     <div class="container px-4">
         <div class="row mb-5">
             <div class="col-lg-8 mx-auto text-center">
-                <h2 class="display-5 mb-4 fw-bold text-white">Choose Your Class</h2>
+                <h2 class="display-5 mb-4 fw-bold text-white animate__animated animate__fadeIn">Choose Your Class</h2>
                 <div class="d-flex justify-content-center gap-2 flex-wrap">
-                    <button class="btn btn-sm btn-light filter-btn active" data-filter="all">All Classes</button>
-                    <button class="btn btn-sm btn-danger filter-btn" data-filter="offense">Offense</button>
-                    <button class="btn btn-sm btn-primary filter-btn" data-filter="defense">Defense</button>
-                    <button class="btn btn-sm btn-success filter-btn" data-filter="support">Support</button>
+                    <button class="btn btn-sm btn-light filter-btn active" data-filter="all" aria-pressed="true">All Classes</button>
+                    <button class="btn btn-sm btn-danger filter-btn" data-filter="offense" aria-pressed="false">Offense</button>
+                    <button class="btn btn-sm btn-primary filter-btn" data-filter="defense" aria-pressed="false">Defense</button>
+                    <button class="btn btn-sm btn-success filter-btn" data-filter="support" aria-pressed="false">Support</button>
                 </div>
             </div>
         </div>
@@ -55,12 +53,15 @@
             ] %}
             
             {% for merc in mercs %}
-            <div class="col-md-6 col-lg-4 merc-item" data-role="{{ merc.role }}">
-                <div class="card h-100 border-0 shadow-lg hover-effect">
-                    <div class="position-relative">
-                        <img src="{{ url_for('static', filename='assets/img/' + merc.img) }}" 
-                             class="card-img-top p-3" 
-                             alt="{{ merc.name }}"
+            <div class="col-md-6 col-lg-4 merc-item animate__animated animate__fadeIn" 
+                 data-role="{{ merc.role }}"
+                 data-aos="fade-up"
+                 data-aos-delay="{{ loop.index * 100 }}">
+                <div class="card h-100 border-0 shadow-lg hover-effect merc-card">
+                    <div class="position-relative merc-img-container">
+                        <img src="{{ url_for('static', filename='assets/img/' ~ merc.img) }}" 
+                             class="card-img-top merc-img lazy-image" 
+                             alt="{{ merc.name }} class from Team Fortress 2"
                              loading="lazy">
                         <div class="position-absolute top-0 end-0 m-3">
                             <span class="badge bg-{{ 'danger' if merc.role == 'offense' else 'primary' if merc.role == 'defense' else 'success' }}">
@@ -71,8 +72,9 @@
                     <div class="card-body text-center">
                         <h5 class="card-title mb-2 fw-bold">{{ merc.name }}</h5>
                         <p class="text-muted small mb-3">{{ merc.desc }}</p>
-                        <a href="{{ url_for('views.' + merc.route) }}" 
-                           class="btn btn-outline-warning w-100">
+                        <a href="{{ url_for('views.' ~ merc.route) }}" 
+                           class="btn btn-outline-warning w-100 view-details-btn"
+                           aria-label="View details about {{ merc.name }}">
                             View Details
                         </a>
                     </div>
@@ -87,36 +89,391 @@
 {% block head %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 <style>
-    .text-shadow { text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-    .hover-effect { transition: transform 0.3s ease; }
-    .hover-effect:hover { transform: translateY(-5px); }
-    .filter-btn { transition: all 0.3s ease; }
-    .filter-btn.active { transform: scale(1.1); }
+    /* Improved text shadowing for better readability */
+    .text-shadow { 
+        text-shadow: 3px 3px 5px rgba(0,0,0,0.4); 
+    }
+
+    /* Enhanced hover effects with depth */
+    .hover-effect { 
+        transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1); 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .hover-effect:hover { 
+        transform: translateY(-8px); 
+        box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+    }
+    .hover-effect:active {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+
+    /* Improved filter buttons */
+    .filter-btn { 
+        transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1); 
+        position: relative;
+        overflow: hidden;
+        font-weight: 600;
+        padding: 0.4rem 1rem;
+        border-radius: 8px;
+        box-shadow: 0 3px 5px rgba(0,0,0,0.1);
+    }
+    .filter-btn::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        background: rgba(255,255,255,0.5);
+        opacity: 0;
+        border-radius: 100%;
+        transform: scale(1) translate(-50%, -50%);
+        transform-origin: 0% 0%;
+    }
+    .filter-btn:active::after {
+        opacity: 1;
+        transform: scale(20) translate(-50%, -50%);
+        transition: transform 0.4s, opacity 0.3s;
+    }
+    .filter-btn:hover:not(.active) { 
+        transform: translateY(-2px);
+        box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+    }
+    .filter-btn.active { 
+        transform: scale(1.1); 
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        font-weight: 700;
+    }
+
+    /* Enhanced masthead and background */
+    .masthead {
+        padding-top: 6rem;
+        padding-bottom: 8rem;
+        position: relative;
+        min-height: 400px;
+    }
+    .masthead-background {
+        background: linear-gradient(135deg, #a73232 0%, #ffc857 100%); 
+        clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+        background-size: 200% 200%;
+        animation: gradientShift 12s ease-in-out infinite;
+        will-change: background-position, transform;
+    }
+    .masthead-background::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+        opacity: 0.5;
+    }
+
+    /* Browse button enhancement */
+    .browse-btn {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    .browse-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+    }
+    .browse-btn:active {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+    }
+    .browse-btn::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+        transform: translateX(-100%);
+    }
+    .browse-btn:hover::after {
+        animation: shine 1.5s infinite;
+    }
+    @keyframes shine {
+        100% {
+            transform: translateX(100%);
+        }
+    }
+
+    /* Soft hero animations */
+    @keyframes gradientShift {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+
+    @keyframes floatY {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-8px); }
+    }
+
+    @keyframes fadeDownSoft {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUpSoft {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes popIn {
+        0% { opacity: 0; transform: scale(0.9); }
+        60% { opacity: 1; transform: scale(1.03); }
+        100% { transform: scale(1); }
+    }
+
+    .masthead-heading { animation: fadeDownSoft .8s ease-out both; }
+    .masthead-subheading { animation: fadeUpSoft .8s .1s ease-out both; }
+    .browse-btn { animation: popIn .6s .2s ease-out both; }
+
+    /* Respect reduced motion preferences */
+    @media (prefers-reduced-motion: reduce) {
+        * { animation: none !important; transition: none !important; }
+    }
+    
+    /* Card improvements */
+    .merc-card {
+        background: rgba(30, 30, 30, 0.7);
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+    }
+    .merc-card::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(45deg, #a73232, transparent, #ffc857);
+        z-index: -1;
+        transform: scale(0.98);
+        transition: transform 0.3s;
+        border-radius: 14px;
+        opacity: 0.6;
+    }
+    .merc-card:hover::before {
+        transform: scale(1);
+        opacity: 1;
+    }
+    
+    /* Fix loading animation keyframes */
+    @keyframes loading {
+        0% { width: 0%; }
+        60% { width: 80%; }
+        100% { width: 100%; }
+    }
+    
+    /* Fix image loading without blur */
+    .lazy-image {
+        opacity: 1;
+        transition: transform 0.5s ease;
+        filter: none; /* Remove blur effect */
+    }
+    .lazy-image.loaded {
+        filter: none; /* Ensure no filter is applied when loaded */
+    }
+    
+    /* Image hover effect */
+    .merc-img-container {
+        overflow: hidden;
+        border-radius: 8px;
+        margin: 0.75rem;
+    }
+    .merc-img {
+        transition: transform 0.5s ease;
+    }
+    .hover-effect:hover .merc-img {
+        transform: scale(1.07);
+    }
+    
+    /* Ensure masthead background is visible */
+    .masthead {
+        position: relative;
+        min-height: 400px;
+    }
+    .masthead-background {
+        background: linear-gradient(135deg, #a73232 0%, #ffc857 100%); 
+        clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
+    
+    /* Add focus styles for keyboard navigation */
+    .hover-effect.focus-within {
+        transform: translateY(-8px); 
+        box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+    }
+    .hover-effect:focus-within .merc-img {
+        transform: scale(1.07);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .masthead {
+            padding-top: 4rem;
+            padding-bottom: 6rem;
+        }
+        .masthead-heading {
+            font-size: 2.2rem !important;
+        }
+        .masthead-subheading {
+            font-size: 1.5rem !important;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block javascript %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Filter functionality with improved animations
     const filterBtns = document.querySelectorAll('.filter-btn');
     const mercItems = document.querySelectorAll('.merc-item');
+    
+    // Smooth scroll for the browse button
+    const browseBtn = document.querySelector('.browse-btn');
+    if (browseBtn) {
+        browseBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                window.scrollTo({
+                    top: target.offsetTop - 80, // Adjust for navbar height
+                    behavior: 'smooth'
+                });
+            }
+        });
+    }
 
+    // Fixed filter animation with reliable timing
     filterBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const filter = btn.dataset.filter;
             
-            filterBtns.forEach(b => b.classList.remove('active'));
+            // Update button states
+            filterBtns.forEach(b => {
+                b.classList.remove('active');
+                b.setAttribute('aria-pressed', 'false');
+            });
             btn.classList.add('active');
-
+            btn.setAttribute('aria-pressed', 'true');
+            
+            // More reliable filtering without complex animations
             mercItems.forEach(item => {
                 if (filter === 'all' || item.dataset.role === filter) {
+                    // Show matching items
                     item.style.display = 'block';
-                    item.classList.add('animate__animated', 'animate__fadeIn');
+                    // Remove any existing animation classes
+                    item.classList.remove('animate__fadeOut');
+                    // Apply fade in
+                    item.classList.remove('animate__fadeIn');
+                    void item.offsetWidth; // Force reflow to restart animation
+                    item.classList.add('animate__fadeIn');
                 } else {
-                    item.style.display = 'none';
+                    // First add fadeout animation
+                    item.classList.remove('animate__fadeIn');
+                    item.classList.add('animate__fadeOut');
+                    // Then hide after animation completes
+                    setTimeout(() => {
+                        item.style.display = 'none';
+                        item.classList.remove('animate__fadeOut');
+                    }, 500);
                 }
             });
         });
+    });
+    
+    // Simplified image lazy loading without blur
+    const lazyImages = document.querySelectorAll('.lazy-image');
+    lazyImages.forEach(img => {
+        // Set src attribute to ensure image loads
+        if (img.hasAttribute('data-src')) {
+            img.setAttribute('src', img.getAttribute('data-src'));
+        }
+        
+        // Add loaded class when image is done loading
+        if (img.complete) {
+            img.classList.add('loaded');
+        } else {
+            img.addEventListener('load', () => {
+                img.classList.add('loaded');
+            });
+        }
+    });
+    
+    // Use IntersectionObserver to only load images when they come into view
+    if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('loaded');
+                    imageObserver.unobserve(entry.target);
+                }
+            });
+        });
+        
+        lazyImages.forEach(img => imageObserver.observe(img));
+    } else {
+        // Fallback: just mark all images as loaded
+        lazyImages.forEach(img => img.classList.add('loaded'));
+    }
+    
+    // Add hover state for accessibility
+    document.querySelectorAll('.view-details-btn').forEach(btn => {
+        btn.addEventListener('focus', () => {
+            const card = btn.closest('.hover-effect');
+            if (card) card.classList.add('focus-within');
+        });
+        btn.addEventListener('blur', () => {
+            const card = btn.closest('.hover-effect');
+            if (card) card.classList.remove('focus-within');
+        });
+    });
+    
+    // More efficient parallax (using requestAnimationFrame)
+    const masthead = document.querySelector('.masthead-background');
+    if (masthead) {
+        let ticking = false;
+        
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const scrollPos = window.scrollY;
+                    if (scrollPos < 600) { // Only apply effect when masthead is visible
+                        masthead.style.transform = `translateY(${scrollPos * 0.4}px)`;
+                    }
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }, { passive: true });
+    }
+    
+    // Initialize all loaded images on page load
+    window.addEventListener('load', () => {
+        lazyImages.forEach(img => img.classList.add('loaded'));
     });
 });
 </script>

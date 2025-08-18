@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, url_for, request, flash, redirect, jsonify, current_app
-from flask_login import login_user, login_required, logout_user, current_user
-from .models import User, Note, GalleryImage, Tag
-from . import db
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify, abort, flash, current_app
+from flask_login import login_required, current_user, login_user
+from .models import db, Thread, ThreadComment, Tag, User, Note, GalleryImage  # ensure these exist
+from sqlalchemy import func
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from werkzeug.security import generate_password_hash
@@ -48,6 +48,13 @@ def _seed_default_tags():
             db.session.add(Tag(name=name, slug=slug))
         db.session.commit()
 
+def _safe_slugify(name: str) -> str:
+    name = (name or "").strip()
+    if hasattr(Tag, 'slugify') and callable(getattr(Tag, 'slugify')):
+        return Tag.slugify(name)
+    # fallback simple slugify
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "tag"
+
 # Home page route
 @views.route("/")
 @views.route("/home")
@@ -57,13 +64,145 @@ def home():
     return render_template("home.html", user=current_user)
 
 # Contact page route
+
+# Contact page: list threads
 @views.route("/contact", methods=['GET'])
 def contact():
-    _seed_default_tags()
-    # Pinned first, then newest
-    notes = Note.query.order_by(Note.pinned.desc(), Note.created_at.desc()).all()
-    all_tags = Tag.query.order_by(Tag.name.asc()).all()
-    return render_template("contact.html", user=current_user, notes=notes, all_tags=all_tags)
+    # ensure some default tags exist for first-run UX
+    try:
+        _seed_default_tags()
+    except Exception:
+        pass
+    threads = Thread.query.order_by(Thread.pinned.desc(), Thread.created_at.desc()).all()
+    return render_template("contact.html", user=current_user, threads=threads)
+# Pin/unpin a thread (owner/admin/moderator)
+@views.route("/contact/thread/<int:thread_id>/pin", methods=['POST'])
+@login_required
+def pin_thread(thread_id):
+    thread = Thread.query.get_or_404(thread_id)
+    if not current_user.can_moderate():
+        flash('You do not have permission.', 'error')
+        return redirect(url_for('views.view_thread', thread_id=thread.id))
+    thread.pinned = not thread.pinned
+    db.session.commit()
+    flash(('Pinned' if thread.pinned else 'Unpinned') + ' thread.', 'success')
+    return redirect(url_for('views.view_thread', thread_id=thread.id))
+
+# Lock/unlock a thread (owner/admin/moderator)
+@views.route("/contact/thread/<int:thread_id>/lock", methods=['POST'])
+@login_required
+def lock_thread(thread_id):
+    thread = Thread.query.get_or_404(thread_id)
+    if not current_user.can_moderate():
+        flash('You do not have permission.', 'error')
+        return redirect(url_for('views.view_thread', thread_id=thread.id))
+    thread.locked = not thread.locked
+    db.session.commit()
+    flash(('Locked' if thread.locked else 'Unlocked') + ' thread.', 'success')
+    return redirect(url_for('views.view_thread', thread_id=thread.id))
+
+# Delete a thread (owner/admin/moderator)
+@views.route("/contact/thread/<int:thread_id>/delete", methods=['POST'])
+@login_required
+def delete_thread(thread_id):
+    thread = Thread.query.get_or_404(thread_id)
+    if not current_user.can_moderate() and thread.user_id != current_user.id:
+        flash('You do not have permission.', 'error')
+        return redirect(url_for('views.contact'))
+    db.session.delete(thread)
+    db.session.commit()
+    flash('Thread deleted.', 'success')
+    return redirect(url_for('views.contact'))
+
+# --- Tag APIs ---
+@views.route("/api/tags")
+def api_tags():
+    tags = Tag.query.order_by(Tag.name.asc()).all()
+    return jsonify([{"id": t.id, "name": t.name, "slug": t.slug} for t in tags])
+
+def _require_tag_manager():
+    if not current_user.is_authenticated or current_user.role not in ("owner","admin"):
+        abort(403)
+
+@views.route("/admin/tags", methods=["POST"])
+@login_required
+def admin_create_tag():
+    _require_tag_manager()
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error":"name required"}), 400
+    slug = _safe_slugify(name)
+    # prevent dup
+    if Tag.query.filter(func.lower(Tag.slug)==slug.lower()).first():
+        return jsonify({"error":"exists"}), 409
+    tag = Tag(name=name, slug=slug)
+    db.session.add(tag)
+    db.session.commit()
+    return jsonify({"ok": True, "id": tag.id})
+
+@views.route("/admin/tags/<int:tag_id>", methods=["DELETE"])
+@login_required
+def admin_delete_tag(tag_id: int):
+    _require_tag_manager()
+    tag = Tag.query.get_or_404(tag_id)
+    db.session.delete(tag)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+# --- Thread create with description + tags ---
+@views.route("/threads/create", methods=["POST"])
+@login_required
+def create_thread():
+    title = (request.form.get("title") or "").strip()
+    desc = (request.form.get("description") or "").strip()
+    tag_ids_csv = (request.form.get("tag_ids") or "").strip()
+    if not title or not desc:
+        flash("Title and description are required.", "error")
+        return redirect(url_for("views.contact"))
+
+    thread = Thread(title=title, user_id=current_user.id)
+    # attach tags
+    if tag_ids_csv:
+        ids = [int(x) for x in tag_ids_csv.split(",") if x.isdigit()]
+        if ids:
+            tags = Tag.query.filter(Tag.id.in_(ids)).all()
+            thread.tags = tags
+    db.session.add(thread)
+    db.session.flush()  # get thread.id
+
+    # first comment = description
+    first = ThreadComment(thread_id=thread.id, user_id=current_user.id, content=desc)
+    db.session.add(first)
+    db.session.commit()
+
+    flash("Thread created.", "success")
+    return redirect(url_for("views.view_thread", thread_id=thread.id))
+
+# View a thread and its comments
+@views.route("/contact/thread/<int:thread_id>", methods=['GET'])
+def view_thread(thread_id):
+    thread = Thread.query.get_or_404(thread_id)
+    comments = ThreadComment.query.filter_by(thread_id=thread.id).order_by(ThreadComment.created_at.asc()).all()
+    return render_template("thread.html", user=current_user, thread=thread, comments=comments)
+
+# Add a comment to a thread
+@views.route("/contact/thread/<int:thread_id>/comment", methods=['POST'])
+@login_required
+def add_thread_comment(thread_id):
+    thread = Thread.query.get_or_404(thread_id)
+    if thread.locked:
+        flash('Thread is locked. No new comments allowed.', 'error')
+        return redirect(url_for('views.view_thread', thread_id=thread.id))
+    content = (request.form.get('content') or '').strip()
+    if len(content) < 2:
+        flash('Comment must be at least 2 characters.', 'error')
+        return redirect(url_for('views.view_thread', thread_id=thread.id))
+    comment = ThreadComment(content=content, author=current_user, thread=thread)
+    db.session.add(comment)
+    db.session.commit()
+    flash('Comment posted!', 'success')
+    return redirect(url_for('views.view_thread', thread_id=thread.id))
 
 # Add note route (AJAX)
 @views.route('/add-note', methods=['POST'])
@@ -180,26 +319,26 @@ def gallery():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(GALLERY_FOLDER, filename))
-            # Set upload_time as UTC and timezone-aware
+            # Set created_at as UTC and timezone-aware
             utc_now = datetime.now(pytz.utc)
             new_image = GalleryImage(
                 filename=filename,
                 uploader_id=current_user.id,
                 description=description,
-                upload_time=utc_now
+                created_at=utc_now
             )
             db.session.add(new_image)
             db.session.commit()
             flash('Image uploaded!', 'success')
             return redirect(url_for('views.gallery'))
-    images = GalleryImage.query.order_by(GalleryImage.upload_time.desc()).all()
+    images = GalleryImage.query.order_by(GalleryImage.created_at.desc()).all()
     nz_tz = pytz.timezone('Pacific/Auckland')
     for img in images:
-        # Ensure upload_time is timezone-aware before converting
-        if img.upload_time.tzinfo is None:
-            img.upload_time = pytz.utc.localize(img.upload_time)
+        # Ensure created_at is timezone-aware before converting
+        if img.created_at.tzinfo is None:
+            img.created_at = pytz.utc.localize(img.created_at)
         # Format for readability: e.g. "Tue, 13 Aug 2025, 03:45 PM"
-        img.nzst = img.upload_time.astimezone(nz_tz).strftime('%a, %d %b %Y, %I:%M %p')
+        img.nzst = img.created_at.astimezone(nz_tz).strftime('%a, %d %b %Y, %I:%M %p')
     return render_template('gallery.html', images=images, user=current_user)
 
 # Login route

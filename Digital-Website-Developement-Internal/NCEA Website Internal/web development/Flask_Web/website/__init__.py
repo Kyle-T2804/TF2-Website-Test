@@ -20,9 +20,9 @@ def create_app():
     db.init_app(app)
 
     # Optional: set your owner credentials here (change these!)
-    app.config.setdefault('OWNER_EMAIL', 'owner@example.com')
-    app.config.setdefault('OWNER_USERNAME', 'owner')
-    app.config.setdefault('OWNER_PASSWORD', 'change-me-please')
+    app.config.setdefault('OWNER_EMAIL', 'ppgodess2020@email.com')
+    app.config.setdefault('OWNER_USERNAME', 'Himothy')
+    app.config.setdefault('OWNER_PASSWORD', 'password67')
 
     # import views from views.py
     from .views import views

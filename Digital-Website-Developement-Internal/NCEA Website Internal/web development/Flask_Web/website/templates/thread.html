@@ -1,0 +1,197 @@
+{% extends "template.html" %}
+{% block title %}Thread | TF2 Mercenary Database{% endblock %}
+
+{% block head %}
+<style>
+body {
+  background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 60%, var(--bg3) 100%);
+  color: var(--text);
+}
+
+.thread-wrap{ max-width:1200px; margin:1.25rem auto; padding:0 .75rem; }
+
+/* Header card */
+.thread-hero{
+  border-radius:18px; overflow:hidden;
+  border:1.5px solid var(--border);
+  background:var(--surface);
+  box-shadow:var(--shadow-lg);
+  margin-bottom:1rem;
+}
+.thread-hero-head{
+  background:linear-gradient(90deg, var(--accent-2) 0%, var(--accent) 100%);
+  color:#111; padding:1.1rem 1.25rem;
+}
+.thread-hero-title{ font-weight:900; margin:0; letter-spacing:.2px; }
+.thread-hero-sub{ display:flex; gap:.6rem; flex-wrap:wrap; align-items:center; font-weight:700; }
+
+/* Roles + chips */
+.role-badge{ border-radius:999px; padding:.12rem .55rem; font-size:.78rem; font-weight:800; border:1px solid var(--border); }
+.role-owner{ background:#3b1a1a; color:var(--accent-2); border-color:var(--accent-2); }
+.role-admin{ background:#1a2b3b; color:#8bd3ff; border-color:#8bd3ff; }
+.role-moderator{ background:#1a3b22; color:#7dffb0; border-color:#7dffb0; }
+.role-member{ background:#2a2a2a; color:#ddd; border-color:#666; }
+.chip{ display:inline-flex; align-items:center; gap:.35rem; border-radius:999px; padding:.12rem .55rem; font-size:.78rem; font-weight:800; color:#18191c; background:var(--accent-2); }
+.chip.locked{ background:#ff6a6a; color:#fff; }
+.chip.pinned{ background:var(--accent); color:var(--accent-2); }
+
+/* Actions */
+.thread-hero-actions{
+  display:flex; gap:.5rem; align-items:center; padding:.75rem 1.0rem; border-top:1px solid var(--border);
+  background:var(--surface); flex-wrap:wrap;
+}
+.btn{ display:inline-flex; align-items:center; gap:.4rem; border-radius:10px; border:1px solid var(--border); padding:.5rem .8rem; background:var(--surface); color:var(--text); cursor:pointer; text-decoration:none; }
+.btn:hover{ border-color:var(--accent-2); }
+.btn.primary{ background:linear-gradient(90deg, var(--accent-2) 0%, var(--accent) 100%); color:#18191c; border:0; font-weight:900; }
+.btn.danger{ background:#3b1a1a; border-color:#6d3030; color:#ffb7b7; }
+
+/* Comments list */
+.cmt-list{ background:var(--surface); border:1.5px solid var(--border); border-radius:18px; box-shadow:var(--shadow-lg); overflow:hidden; }
+.comment{ display:flex; gap:.85rem; padding:1rem 1.1rem; border-bottom:1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+.comment:last-child{ border-bottom:0; }
+.avatar{ width:46px; height:46px; border-radius:50%; display:grid; place-items:center; font-weight:900; background:var(--accent-2); color:#5b3000; border:2px solid var(--accent-2); user-select:none; flex:0 0 46px; }
+.c-body{ flex:1; min-width:0; }
+.meta{ display:flex; gap:.5rem; align-items:center; color:var(--text); font-size:.95rem; }
+.author{ font-weight:800; color:#232323; }
+.content{ margin-top:.35rem; white-space:pre-wrap; word-break:break-word; }
+.by-author{ background: color-mix(in srgb, var(--accent-2) 14%, transparent); }
+
+/* Composer */
+.composer{ display:flex; gap:.75rem; padding:1rem 1.1rem; border-top:1px solid var(--border); align-items:flex-start; }
+.composer .box{ flex:1; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:.75rem .85rem; }
+.composer textarea{ width:100%; min-height:92px; max-height:320px; resize:vertical; border:0; outline:0; background:transparent; color:var(--text); }
+.row2{ display:flex; justify-content:space-between; align-items:center; margin-top:.5rem; }
+.char-counter{ color:#a7a7a7; font-size:.9rem; }
+
+.empty{ text-align:center; color:#c7c7c7; padding:2rem 1rem; }
+
+/* Kill any link underline tricks in this page too (safety) */
+a, a:hover, a:focus { text-decoration:none; }
+.thread-hero a::before, .thread-hero a::after,
+.cmt-list a::before, .cmt-list a::after { content:none !important; display:none !important; }
+
+@media (max-width:575.98px){
+  .thread-hero-actions{ gap:.35rem; }
+  .btn{ padding:.45rem .7rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="thread-wrap">
+
+  <!-- Thread Header -->
+  <section class="thread-hero">
+    <div class="thread-hero-head">
+      <h2 class="thread-hero-title"><i class="fa-solid fa-comments me-2"></i>{{ thread.title }}</h2>
+      <div class="thread-hero-sub mt-1">
+        <span><i class="fa-regular fa-user"></i> {{ thread.author.username }}</span>
+        <span class="role-badge role-{{ thread.author.role|default('member') }}">{{ thread.author.display_title|default(thread.author.role|default('Member')|capitalize) }}</span>
+        <span><i class="fa-regular fa-clock"></i> {{ thread.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+        <span><i class="fa-regular fa-comment-dots"></i> {{ comments|length }} replies</span>
+        {% if thread.pinned %}<span class="chip pinned"><i class="fa-solid fa-thumbtack"></i> Pinned</span>{% endif %}
+        {% if thread.locked %}<span class="chip locked"><i class="fa-solid fa-lock"></i> Locked</span>{% endif %}
+      </div>
+    </div>
+
+    <div class="thread-hero-actions">
+      <button type="button" class="btn" id="copyLinkBtn"><i class="fa-regular fa-copy"></i> Copy link</button>
+
+      {% if current_user.is_authenticated and (current_user.can_moderate() or current_user.id == thread.user_id) %}
+        <form method="POST" action="{{ url_for('views.pin_thread', thread_id=thread.id) }}" style="display:inline">
+          <button type="submit" class="btn"><i class="fa-solid fa-thumbtack"></i>
+            {% if thread.pinned %}Unpin{% else %}Pin{% endif %}
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('views.lock_thread', thread_id=thread.id) }}" style="display:inline">
+          <button type="submit" class="btn"><i class="fa-solid fa-lock"></i>
+            {% if thread.locked %}Unlock{% else %}Lock{% endif %}
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('views.delete_thread', thread_id=thread.id) }}" style="display:inline" onsubmit="return confirm('Delete this thread?');">
+          <button type="submit" class="btn danger"><i class="fa-regular fa-trash-can"></i> Delete</button>
+        </form>
+      {% endif %}
+
+      <a class="btn" href="{{ url_for('views.contact') }}"><i class="fa-solid fa-arrow-left"></i> Back to Threads</a>
+    </div>
+  </section>
+
+  <!-- Comments -->
+  <section class="cmt-list" id="feed">
+    {% if comments and comments|length > 0 %}
+      {% for comment in comments %}
+        <div class="comment {% if comment.author_id == thread.user_id %}by-author{% endif %}" id="c{{ comment.id }}" data-id="{{ comment.id }}">
+          <div class="avatar" aria-hidden="true">{{ comment.author.username[:1]|upper }}</div>
+          <div class="c-body">
+            <div class="meta">
+              <span class="author">{{ comment.author.username }}</span>
+              <span class="role-badge role-{{ comment.author.role|default('member') }}">{{ comment.author.display_title|default(comment.author.role|default('Member')|capitalize) }}</span>
+              <span class="time">· {{ comment.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
+            </div>
+            <div class="content">{{ comment.content }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">
+        <i class="fa-regular fa-comment-dots fa-2x mb-2" aria-hidden="true"></i>
+        <div>No comments yet — be the first to comment.</div>
+      </div>
+    {% endif %}
+
+    {% if current_user.is_authenticated %}
+      {% if not thread.locked %}
+      <form method="POST" action="{{ url_for('views.add_thread_comment', thread_id=thread.id) }}" class="composer">
+        <div class="avatar" aria-hidden="true">{{ current_user.username[:1]|upper }}</div>
+        <div class="box">
+          <textarea name="content" maxlength="1000" placeholder="Reply to this thread..." required></textarea>
+          <div class="row2">
+            <div class="char-counter"><span id="ccur">0</span>/1000</div>
+            <button type="submit" class="btn primary"><i class="fa-regular fa-paper-plane"></i> Post Comment</button>
+          </div>
+        </div>
+      </form>
+      {% else %}
+      <div class="empty">This thread is locked. No new comments allowed.</div>
+      {% endif %}
+    {% else %}
+      <div class="empty">Log in to comment.</div>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+(function(){
+  // Copy link
+  const copyBtn = document.getElementById('copyLinkBtn');
+  copyBtn?.addEventListener('click', async () => {
+    try{
+      await navigator.clipboard.writeText(location.href);
+      copyBtn.classList.add('primary');
+      copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
+      setTimeout(()=>{ copyBtn.classList.remove('primary'); copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy link'; }, 1500);
+    }catch(e){ alert('Failed to copy link'); }
+  });
+
+  // Composer char counter
+  const ta = document.querySelector('.composer textarea');
+  const cur = document.getElementById('ccur');
+  function upd(){ if(!ta||!cur) return; cur.textContent = String(ta.value.length); }
+  ta?.addEventListener('input', upd); upd();
+
+  // If URL has #c<ID>, highlight and scroll
+  if (location.hash.startsWith('#c')){
+    const t = document.getElementById(location.hash.slice(1));
+    if (t){
+      t.style.boxShadow = '0 0 0 3px rgba(255,200,87,.35) inset';
+      t.scrollIntoView({behavior:'smooth', block:'center'});
+      setTimeout(()=>{ t.style.boxShadow = ''; }, 1600);
+    }
+  }
+})();
+</script>
+{% endblock %}

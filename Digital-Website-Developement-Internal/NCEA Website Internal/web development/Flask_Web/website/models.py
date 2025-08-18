@@ -2,12 +2,19 @@ from . import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import re
 
 # Many-to-many for Note <-> Tag
 note_tag = db.Table(
     'note_tag',
     db.Column('note_id', db.Integer, db.ForeignKey('note.id'), primary_key=True),
     db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'), primary_key=True),
+)
+
+thread_tags = db.Table(
+    "thread_tags",
+    db.Column("thread_id", db.Integer, db.ForeignKey("thread.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("tag_id", db.Integer, db.ForeignKey("tag.id", ondelete="CASCADE"), primary_key=True),
 )
 
 class User(db.Model, UserMixin):
@@ -28,6 +35,8 @@ class User(db.Model, UserMixin):
     # Relationships
     notes = db.relationship('Note', back_populates='author', cascade='all, delete-orphan', lazy=True)
     gallery_images = db.relationship('GalleryImage', back_populates='uploader', cascade='all, delete-orphan', lazy=True)
+    threads = db.relationship("Thread", back_populates="author", cascade="all, delete-orphan")
+    thread_comments = db.relationship('ThreadComment', back_populates='author', cascade='all, delete-orphan', lazy=True)
 
     def set_password(self, pw: str):
         self.password_hash = generate_password_hash(pw)
@@ -69,6 +78,13 @@ class Tag(db.Model):
     name = db.Column(db.String(40), unique=True, nullable=False)
     slug = db.Column(db.String(40), unique=True, nullable=False, index=True)
 
+    @staticmethod
+    def slugify(name: str) -> str:
+        s = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        return s or "tag"
+
+    def __repr__(self): return f"<Tag {self.name}>"
+
 class GalleryImage(db.Model):
     __tablename__ = 'gallery_image'
     id = db.Column(db.Integer, primary_key=True)
@@ -78,3 +94,30 @@ class GalleryImage(db.Model):
 
     uploader_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     uploader = db.relationship('User', back_populates='gallery_images')
+
+
+# Thread model for contact page topics
+class Thread(db.Model):
+    __tablename__ = 'thread'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(120), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    pinned = db.Column(db.Boolean, default=False)
+    locked = db.Column(db.Boolean, default=False)
+
+    author = db.relationship("User", back_populates="threads")
+    tags = db.relationship("Tag", secondary=thread_tags, lazy="joined", backref=db.backref("threads", lazy="dynamic"))
+
+
+# Comment model for replies under a thread
+class ThreadComment(db.Model):
+    __tablename__ = 'thread_comment'
+    id = db.Column(db.Integer, primary_key=True)
+    thread_id = db.Column(db.Integer, db.ForeignKey("thread.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    author = db.relationship("User")
+    thread = db.relationship("Thread", backref=db.backref("comments", lazy="joined", cascade="all, delete-orphan"))
