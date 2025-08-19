@@ -37,6 +37,7 @@ class User(db.Model, UserMixin):
     gallery_images = db.relationship('GalleryImage', back_populates='uploader', cascade='all, delete-orphan', lazy=True)
     threads = db.relationship("Thread", back_populates="author", cascade="all, delete-orphan")
     thread_comments = db.relationship('ThreadComment', back_populates='author', cascade='all, delete-orphan', lazy=True)
+    notifications = db.relationship('Notification', back_populates='recipient', cascade='all, delete-orphan', lazy=True, foreign_keys='Notification.user_id')
 
     def set_password(self, pw: str):
         self.password_hash = generate_password_hash(pw)
@@ -118,6 +119,27 @@ class ThreadComment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    # Optional parent for reply threading
+    parent_id = db.Column(db.Integer, db.ForeignKey('thread_comment.id'), nullable=True, index=True)
 
     author = db.relationship("User")
     thread = db.relationship("Thread", backref=db.backref("comments", lazy="joined", cascade="all, delete-orphan"))
+    # relationship to parent comment
+    parent = db.relationship('ThreadComment', remote_side=[id], backref='replies', foreign_keys=[parent_id])
+
+
+class Notification(db.Model):
+    __tablename__ = 'notification'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)  # recipient
+    actor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # who triggered
+    thread_id = db.Column(db.Integer, db.ForeignKey('thread.id'), nullable=False)
+    comment_id = db.Column(db.Integer, db.ForeignKey('thread_comment.id'), nullable=False)
+    kind = db.Column(db.String(20), nullable=False)  # 'mention' | 'reply'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+
+    recipient = db.relationship('User', foreign_keys=[user_id], back_populates='notifications')
+    actor = db.relationship('User', foreign_keys=[actor_id])
+    thread = db.relationship('Thread')
+    comment = db.relationship('ThreadComment')

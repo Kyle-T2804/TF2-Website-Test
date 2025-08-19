@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, abort, flash, current_app
 from flask_login import login_required, current_user, login_user
-from .models import db, Thread, ThreadComment, Tag, User, Note, GalleryImage  # ensure these exist
+from .models import db, Thread, ThreadComment, Tag, User, Note, GalleryImage, Notification  # ensure these exist
 from sqlalchemy import func
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -35,6 +35,41 @@ def valid_password(pw: str) -> bool:
     """
     return len(pw) >= 6  # Only require 6 or more characters
 
+# --- Notifications ---
+@views.app_context_processor
+def inject_unread_count():
+    count = 0
+    if current_user.is_authenticated:
+        try:
+            count = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
+        except Exception:
+            count = 0
+    return { 'unread_notifications': count }
+
+@views.route('/notifications')
+@login_required
+def notifications_page():
+    items = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).limit(50).all()
+    # Simple JSON for now; could render a template later
+    def fmt(n):
+        return {
+            'id': n.id,
+            'kind': n.kind,
+            'is_read': n.is_read,
+            'created_at': n.created_at.isoformat(),
+            'thread_id': n.thread_id,
+            'comment_id': n.comment_id,
+            'actor': getattr(n.actor, 'username', 'unknown'),
+        }
+    return jsonify([fmt(n) for n in items])
+
+@views.route('/notifications/mark-read', methods=['POST'])
+@login_required
+def notifications_mark_read():
+    Notification.query.filter_by(user_id=current_user.id, is_read=False).update({ Notification.is_read: True })
+    db.session.commit()
+    return jsonify({ 'ok': True })
+
 def _seed_default_tags():
     defaults = [
         ('Question', 'question'),
@@ -54,6 +89,71 @@ def _safe_slugify(name: str) -> str:
         return Tag.slugify(name)
     # fallback simple slugify
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "tag"
+
+# --- Users suggestion API for @-mention autocomplete ---
+@views.route("/api/users/suggest", methods=["GET"])
+@login_required
+def api_user_suggest():
+    q = (request.args.get("q") or "").strip()
+    thread_id_raw = request.args.get("thread_id")
+    thread_id = int(thread_id_raw) if thread_id_raw and thread_id_raw.isdigit() else None
+    # normalize and validate
+    if q.startswith("@"): q = q[1:]
+    q = re.sub(r"[^A-Za-z0-9_]+", "", q)[:32]
+    if not q:
+        return jsonify([])
+
+    q_prefix = f"{q.lower()}%"
+
+    seen = set()
+    out = []
+
+    # Prefer participants in thread first
+    if thread_id:
+        try:
+            part_q = (
+                User.query
+                .join(ThreadComment, ThreadComment.user_id == User.id)
+                .filter(ThreadComment.thread_id == thread_id)
+                .filter(func.lower(User.username).like(q_prefix))
+                .order_by(func.lower(User.username).asc())
+                .limit(8)
+                .all()
+            )
+            for u in part_q:
+                if u.id in seen: continue
+                seen.add(u.id)
+                out.append({
+                    "id": u.id,
+                    "username": u.username,
+                    "title": u.display_title,
+                    "role": u.role,
+                })
+                if len(out) >= 8: break
+        except Exception:
+            pass
+
+    # Then global users if room remains
+    if len(out) < 8:
+        more_q = (
+            User.query
+            .filter(func.lower(User.username).like(q_prefix))
+            .order_by(func.lower(User.username).asc())
+            .limit(8)
+            .all()
+        )
+        for u in more_q:
+            if u.id in seen: continue
+            seen.add(u.id)
+            out.append({
+                "id": u.id,
+                "username": u.username,
+                "title": u.display_title,
+                "role": u.role,
+            })
+            if len(out) >= 8: break
+
+    return jsonify(out)
 
 # Home page route
 @views.route("/")
@@ -184,7 +284,17 @@ def create_thread():
 def view_thread(thread_id):
     thread = Thread.query.get_or_404(thread_id)
     comments = ThreadComment.query.filter_by(thread_id=thread.id).order_by(ThreadComment.created_at.asc()).all()
-    return render_template("thread.html", user=current_user, thread=thread, comments=comments)
+    mentions_me_ids = set()
+    if current_user.is_authenticated:
+        uname = (current_user.username or '').lower()
+        pat = re.compile(rf"(?<!\w)@{re.escape(uname)}(?!\w)", re.IGNORECASE)
+        for c in comments:
+            try:
+                if pat.search(c.content or ''):
+                    mentions_me_ids.add(c.id)
+            except Exception:
+                pass
+    return render_template("thread.html", user=current_user, thread=thread, comments=comments, mentions_me_ids=mentions_me_ids)
 
 # Add a comment to a thread
 @views.route("/contact/thread/<int:thread_id>/comment", methods=['POST'])
@@ -195,11 +305,50 @@ def add_thread_comment(thread_id):
         flash('Thread is locked. No new comments allowed.', 'error')
         return redirect(url_for('views.view_thread', thread_id=thread.id))
     content = (request.form.get('content') or '').strip()
+    parent_id_raw = request.form.get('parent_id')
+    parent_id = int(parent_id_raw) if parent_id_raw and parent_id_raw.isdigit() else None
     if len(content) < 2:
         flash('Comment must be at least 2 characters.', 'error')
         return redirect(url_for('views.view_thread', thread_id=thread.id))
-    comment = ThreadComment(content=content, author=current_user, thread=thread)
+    # Validate parent belongs to same thread
+    parent = None
+    if parent_id:
+        parent = ThreadComment.query.filter_by(id=parent_id, thread_id=thread.id).first()
+        if not parent:
+            flash('Invalid reply target.', 'error')
+            return redirect(url_for('views.view_thread', thread_id=thread.id))
+
+    comment = ThreadComment(content=content, author=current_user, thread=thread, parent=parent)
     db.session.add(comment)
+    db.session.flush()  # get comment.id before notifications
+
+    notified_ids = set()
+    # Reply notification to parent author
+    if parent and parent.user_id != current_user.id:
+        notif = Notification(
+            user_id=parent.user_id,
+            actor_id=current_user.id,
+            thread_id=thread.id,
+            comment_id=comment.id,
+            kind='reply'
+        )
+        db.session.add(notif)
+        notified_ids.add(parent.user_id)
+
+    # Mentions: find @username in content
+    for m in re.findall(r"@([A-Za-z0-9_]{1,32})", content):
+        user = User.query.filter(func.lower(User.username) == m.lower()).first()
+        if user and user.id != current_user.id and user.id not in notified_ids:
+            notif = Notification(
+                user_id=user.id,
+                actor_id=current_user.id,
+                thread_id=thread.id,
+                comment_id=comment.id,
+                kind='mention'
+            )
+            db.session.add(notif)
+            notified_ids.add(user.id)
+
     db.session.commit()
     flash('Comment posted!', 'success')
     return redirect(url_for('views.view_thread', thread_id=thread.id))
@@ -315,22 +464,57 @@ def gallery():
 
     if request.method == 'POST':
         file = request.files.get('image')
-        description = request.form.get('description')
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(GALLERY_FOLDER, filename))
-            # Set created_at as UTC and timezone-aware
-            utc_now = datetime.now(pytz.utc)
-            new_image = GalleryImage(
-                filename=filename,
-                uploader_id=current_user.id,
-                description=description,
-                created_at=utc_now
-            )
-            db.session.add(new_image)
-            db.session.commit()
-            flash('Image uploaded!', 'success')
+        description = (request.form.get('description') or '').strip()[:250]
+        if not file or not file.filename:
+            flash('No file selected.', 'error')
             return redirect(url_for('views.gallery'))
+        if not allowed_file(file.filename):
+            flash('Unsupported file type.', 'error')
+            return redirect(url_for('views.gallery'))
+
+        # Enforce server-side size limit (5MB)
+        size_ok = True
+        size = None
+        try:
+            if getattr(file, 'content_length', None):
+                size = file.content_length
+            else:
+                pos = file.stream.tell()
+                file.stream.seek(0, os.SEEK_END)
+                size = file.stream.tell()
+                file.stream.seek(pos)
+            size_ok = (size is None) or (size <= MAX_FILE_SIZE)
+        except Exception:
+            size_ok = True  # if unknown, allow; front-end already checks
+        if not size_ok:
+            flash('Image exceeds 5 MB.', 'error')
+            return redirect(url_for('views.gallery'))
+
+        # Create unique filename to avoid collisions
+        import uuid
+        from pathlib import Path
+        ext = Path(file.filename).suffix.lower()
+        unique_name = f"{uuid.uuid4().hex}{ext}"
+        save_path = os.path.join(GALLERY_FOLDER, unique_name)
+
+        try:
+            file.save(save_path)
+        except Exception:
+            flash('Failed to save image.', 'error')
+            return redirect(url_for('views.gallery'))
+
+        # Set created_at as UTC and timezone-aware
+        utc_now = datetime.now(pytz.utc)
+        new_image = GalleryImage(
+            filename=unique_name,
+            uploader_id=current_user.id,
+            description=description,
+            created_at=utc_now
+        )
+        db.session.add(new_image)
+        db.session.commit()
+        flash('Image uploaded!', 'success')
+        return redirect(url_for('views.gallery'))
     images = GalleryImage.query.order_by(GalleryImage.created_at.desc()).all()
     nz_tz = pytz.timezone('Pacific/Auckland')
     for img in images:
@@ -340,6 +524,28 @@ def gallery():
         # Format for readability: e.g. "Tue, 13 Aug 2025, 03:45 PM"
         img.nzst = img.created_at.astimezone(nz_tz).strftime('%a, %d %b %Y, %I:%M %p')
     return render_template('gallery.html', images=images, user=current_user)
+
+@views.route('/gallery/<int:image_id>/delete', methods=['POST'])
+@login_required
+def delete_gallery_image(image_id):
+    img = GalleryImage.query.get_or_404(image_id)
+    # Permissions: uploader, moderators/admins, or owner
+    if not (current_user.is_authenticated and (current_user.id == img.uploader_id or current_user.can_moderate() or current_user.is_owner)):
+        flash('You do not have permission to delete this image.', 'error')
+        return redirect(url_for('views.gallery'))
+    # Remove file from disk
+    GALLERY_FOLDER = os.path.join(current_app.root_path, 'static', 'gallery')
+    file_path = os.path.join(GALLERY_FOLDER, img.filename)
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    except Exception:
+        pass
+    # Remove DB entry
+    db.session.delete(img)
+    db.session.commit()
+    flash('Image deleted.', 'success')
+    return redirect(url_for('views.gallery'))
 
 # Login route
 @views.route('/login', methods=['GET', 'POST'])

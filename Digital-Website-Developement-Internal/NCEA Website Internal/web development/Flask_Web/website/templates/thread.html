@@ -56,6 +56,12 @@ body {
 .content{ margin-top:.35rem; white-space:pre-wrap; word-break:break-word; }
 .by-author{ background: color-mix(in srgb, var(--accent-2) 14%, transparent); }
 
+/* Reply context and emphasis */
+.reply-context{ display:flex; align-items:center; gap:.5rem; font-size:.9rem; color:#cfcfcf; }
+.reply-chip{ background:rgba(255,200,87,.15); color:#ffd37a; border:1px solid rgba(255,200,87,.4); padding:.1rem .45rem; border-radius:999px; font-weight:800; }
+.highlight-to-user{ box-shadow: 0 0 0 2px rgba(255,200,87,.35) inset; }
+.mention-hit{ box-shadow: 0 0 0 2px rgba(167,50,50,.30) inset; }
+
 /* Composer */
 .composer{ display:flex; gap:.75rem; padding:1rem 1.1rem; border-top:1px solid var(--border); align-items:flex-start; }
 .composer .box{ flex:1; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:.75rem .85rem; }
@@ -69,6 +75,13 @@ body {
 a, a:hover, a:focus { text-decoration:none; }
 .thread-hero a::before, .thread-hero a::after,
 .cmt-list a::before, .cmt-list a::after { content:none !important; display:none !important; }
+
+/* Mention dropdown */
+.mention-list{ position:absolute; z-index:1200; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow-lg); min-width:220px; max-width:320px; overflow:hidden; display:none; }
+.mention-item{ padding:.5rem .7rem; display:flex; align-items:center; gap:.6rem; cursor:pointer; }
+.mention-item:hover, .mention-item.active{ background:rgba(255,200,87,.12); }
+.mention-handle{ font-weight:900; }
+.mention-role{ font-size:.85rem; opacity:.8; }
 
 @media (max-width:575.98px){
   .thread-hero-actions{ gap:.35rem; }
@@ -121,7 +134,9 @@ a, a:hover, a:focus { text-decoration:none; }
   <section class="cmt-list" id="feed">
     {% if comments and comments|length > 0 %}
       {% for comment in comments %}
-        <div class="comment {% if comment.author_id == thread.user_id %}by-author{% endif %}" id="c{{ comment.id }}" data-id="{{ comment.id }}">
+        {% set is_reply_to_me = current_user.is_authenticated and comment.parent and comment.parent.user_id == current_user.id %}
+  {% set mentions_me = current_user.is_authenticated and comment.id in mentions_me_ids %}
+  <div class="comment {% if comment.author_id == thread.user_id %}by-author{% endif %} {% if is_reply_to_me %}highlight-to-user{% endif %} {% if mentions_me %}mention-hit{% endif %}" id="c{{ comment.id }}" data-id="{{ comment.id }}" data-parent-id="{{ comment.parent_id or '' }}">
           <div class="avatar" aria-hidden="true">{{ comment.author.username[:1]|upper }}</div>
           <div class="c-body">
             <div class="meta">
@@ -129,7 +144,20 @@ a, a:hover, a:focus { text-decoration:none; }
               <span class="role-badge role-{{ comment.author.role|default('member') }}">{{ comment.author.display_title|default(comment.author.role|default('Member')|capitalize) }}</span>
               <span class="time">· {{ comment.created_at.strftime('%b %d, %Y %I:%M %p') }}</span>
             </div>
+            {% if comment.parent %}
+            <div class="reply-context">
+              <span class="reply-chip"><i class="fa-solid fa-reply"></i> Replying to</span>
+              <a class="link-light" href="#c{{ comment.parent.id }}">@{{ comment.parent.author.username }}</a>
+              <span class="text-muted">·</span>
+              <span class="text-muted">{{ comment.parent.content[:80] }}{% if comment.parent.content|length > 80 %}…{% endif %}</span>
+            </div>
+            {% endif %}
             <div class="content">{{ comment.content }}</div>
+            {% if current_user.is_authenticated %}
+            <div class="mt-2">
+              <button class="btn btn-sm" data-reply-to="{{ comment.id }}" data-author="{{ comment.author.username }}"><i class="fa-solid fa-reply"></i> Reply</button>
+            </div>
+            {% endif %}
           </div>
         </div>
       {% endfor %}
@@ -142,10 +170,18 @@ a, a:hover, a:focus { text-decoration:none; }
 
     {% if current_user.is_authenticated %}
       {% if not thread.locked %}
-      <form method="POST" action="{{ url_for('views.add_thread_comment', thread_id=thread.id) }}" class="composer">
+      <form method="POST" action="{{ url_for('views.add_thread_comment', thread_id=thread.id) }}" class="composer" id="composerForm">
         <div class="avatar" aria-hidden="true">{{ current_user.username[:1]|upper }}</div>
         <div class="box">
-          <textarea name="content" maxlength="1000" placeholder="Reply to this thread..." required></textarea>
+          <input type="hidden" name="parent_id" id="parentId" value="">
+          <div id="replyBanner" class="mb-2" style="display:none;">
+            <span class="reply-chip"><i class="fa-solid fa-reply"></i> Replying to <a id="replyBannerUser" href="#"></a></span>
+            <button type="button" class="btn btn-sm" id="cancelReplyBtn"><i class="fa-solid fa-xmark"></i> Cancel</button>
+          </div>
+          <div style="position:relative;">
+            <textarea name="content" maxlength="1000" placeholder="Reply to this thread or a comment... Use @ to mention." required></textarea>
+            <div id="mentionList" class="mention-list" role="listbox" aria-label="User suggestions"></div>
+          </div>
           <div class="row2">
             <div class="char-counter"><span id="ccur">0</span>/1000</div>
             <button type="submit" class="btn primary"><i class="fa-regular fa-paper-plane"></i> Post Comment</button>
@@ -183,6 +219,96 @@ a, a:hover, a:focus { text-decoration:none; }
   function upd(){ if(!ta||!cur) return; cur.textContent = String(ta.value.length); }
   ta?.addEventListener('input', upd); upd();
 
+  // --- Mention autocomplete ---
+  const mentionList = document.getElementById('mentionList');
+  let mentionActive = false;
+  let mentionStart = -1; // index in textarea value where @ started
+  let mentionIndex = 0;  // active item index
+  let mentionItems = [];
+  let mentionQuery = '';
+
+  function hideMention(){ mentionActive = false; mentionStart = -1; mentionIndex = 0; mentionItems = []; mentionQuery=''; if(mentionList){ mentionList.style.display='none'; mentionList.innerHTML=''; } }
+
+  function positionMention(){
+    if(!ta||!mentionList) return;
+    const rect = ta.getBoundingClientRect();
+    mentionList.style.display = 'block';
+    mentionList.style.left = '8px';
+    mentionList.style.top = (rect.height + 6) + 'px';
+  }
+
+  async function fetchSuggestions(q){
+    try{
+      const url = new URL('/api/users/suggest', window.location.origin);
+      url.searchParams.set('q', q);
+      url.searchParams.set('thread_id', '{{ thread.id }}');
+      const res = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
+      if(!res.ok) return [];
+      return await res.json();
+    }catch(_){ return []; }
+  }
+
+  function renderMention(items){
+    mentionList.innerHTML = '';
+    items.forEach((u, i) => {
+      const div = document.createElement('div');
+      div.className = 'mention-item' + (i===mentionIndex ? ' active' : '');
+      div.setAttribute('role','option');
+      div.dataset.username = u.username;
+      div.innerHTML = `<span class="mention-handle">@${u.username}</span> <span class="mention-role text-muted">${u.title||''}</span>`;
+      div.addEventListener('mousedown', (e) => { e.preventDefault(); applyMention(u.username); });
+      mentionList.appendChild(div);
+    });
+  }
+
+  function applyMention(username){
+    if(!ta || mentionStart < 0) return;
+    const val = ta.value;
+    const end = ta.selectionStart;
+    // Replace from mentionStart to caret with @username and a trailing space
+    const before = val.slice(0, mentionStart);
+    const after = val.slice(end);
+    const insert = '@' + username + ' ';
+    ta.value = before + insert + after;
+    const caret = before.length + insert.length;
+    ta.setSelectionRange(caret, caret);
+    hideMention();
+    upd();
+  }
+
+  ta?.addEventListener('keydown', (e) => {
+    if(!mentionActive) return;
+    if(e.key==='ArrowDown'){ e.preventDefault(); mentionIndex = (mentionIndex + 1) % (mentionItems.length || 1); renderMention(mentionItems); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); mentionIndex = (mentionIndex - 1 + (mentionItems.length||1)) % (mentionItems.length||1); renderMention(mentionItems); }
+    else if(e.key==='Enter'){ if(mentionActive){ e.preventDefault(); const u = mentionItems[mentionIndex]; if(u) applyMention(u.username); } }
+    else if(e.key==='Escape'){ hideMention(); }
+  });
+
+  ta?.addEventListener('input', async () => {
+    const val = ta.value;
+    const pos = ta.selectionStart;
+    // find the last '@' before the caret, but after a space/start
+    const sub = val.slice(0, pos);
+    const match = sub.match(/(^|\s)@(\w{1,32})$/);
+    if(match){
+      mentionStart = pos - match[2].length - 1; // start index of '@'
+      mentionQuery = match[2];
+      mentionActive = true;
+      positionMention();
+      mentionItems = await fetchSuggestions(mentionQuery);
+      mentionIndex = 0;
+      if(mentionItems.length===0){ hideMention(); return; }
+      renderMention(mentionItems);
+    } else {
+      hideMention();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if(!mentionList) return;
+    if(!mentionList.contains(e.target) && e.target !== ta){ hideMention(); }
+  });
+
   // If URL has #c<ID>, highlight and scroll
   if (location.hash.startsWith('#c')){
     const t = document.getElementById(location.hash.slice(1));
@@ -192,6 +318,32 @@ a, a:hover, a:focus { text-decoration:none; }
       setTimeout(()=>{ t.style.boxShadow = ''; }, 1600);
     }
   }
+
+  // Reply button wiring
+  document.querySelectorAll('[data-reply-to]')?.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-reply-to');
+      const author = btn.getAttribute('data-author') || 'user';
+      const parentField = document.getElementById('parentId');
+      const banner = document.getElementById('replyBanner');
+      const userLink = document.getElementById('replyBannerUser');
+      if (parentField && banner && userLink) {
+        parentField.value = id;
+        userLink.textContent = '@' + author;
+        userLink.setAttribute('href', '#c' + id);
+        banner.style.display = '';
+        // focus textarea
+        document.querySelector('.composer textarea')?.focus();
+      }
+    });
+  });
+
+  // Cancel reply
+  document.getElementById('cancelReplyBtn')?.addEventListener('click', () => {
+    const parentField = document.getElementById('parentId');
+    const banner = document.getElementById('replyBanner');
+    if (parentField && banner) { parentField.value = ''; banner.style.display = 'none'; }
+  });
 })();
 </script>
 {% endblock %}

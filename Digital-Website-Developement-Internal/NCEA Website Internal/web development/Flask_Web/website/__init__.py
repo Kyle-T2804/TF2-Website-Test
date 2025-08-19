@@ -92,3 +92,28 @@ def _run_light_migrations():
             conn.exec_driver_sql(
                 "ALTER TABLE note ADD COLUMN pinned BOOLEAN NOT NULL DEFAULT 0"
             )
+        # thread_comment.parent_id
+        try:
+            conn.execute(text("SELECT parent_id FROM thread_comment LIMIT 1"))
+        except Exception:
+            conn.exec_driver_sql(
+                "ALTER TABLE thread_comment ADD COLUMN parent_id INTEGER REFERENCES thread_comment(id)"
+            )
+        # notification table
+        try:
+            conn.execute(text("SELECT 1 FROM notification LIMIT 1"))
+        except Exception:
+            conn.exec_driver_sql(
+                """
+                CREATE TABLE IF NOT EXISTS notification (
+                  id INTEGER PRIMARY KEY,
+                  user_id INTEGER NOT NULL REFERENCES user(id),
+                  actor_id INTEGER NOT NULL REFERENCES user(id),
+                  thread_id INTEGER NOT NULL REFERENCES thread(id),
+                  comment_id INTEGER NOT NULL REFERENCES thread_comment(id),
+                  kind VARCHAR(20) NOT NULL,
+                  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  is_read BOOLEAN NOT NULL DEFAULT 0
+                )
+                """
+            )

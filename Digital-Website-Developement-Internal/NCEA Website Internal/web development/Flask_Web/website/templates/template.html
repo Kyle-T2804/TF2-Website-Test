@@ -231,6 +231,18 @@
   .toast-body {
     padding: 1rem;
   }
+
+  .toast-progress {
+    position: relative;
+    height: 3px;
+    background: rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .toast-progress .bar {
+    height: 100%; width: 100%;
+    background: linear-gradient(90deg, #a73232, #ff9966);
+    transition: width linear;
+  }
   
   .toast-info .toast-header i {
     color: #0dcaf0;
@@ -259,6 +271,8 @@
     border-bottom: 1px solid rgba(255,255,255,0.1);
     color: #fff;
   }
+  .theme-dark .toast-progress { background: rgba(255,255,255,0.08); }
+  .theme-dark .toast-progress .bar { background: linear-gradient(90deg, #ffc857, #ff9966); }
   
   /* Homepage Animation */
   .homepage-intro {
@@ -369,6 +383,16 @@
     60% { width: 80%; }
     100% { width: 100%; }
   }
+
+  /* Notifications drawer */
+  .notif-drawer{ position:fixed; top:0; right:0; height:100%; width:360px; max-width:90vw; background:#1a1a1a; color:#eee; border-left:1px solid rgba(255,255,255,0.08); box-shadow:-8px 0 24px rgba(0,0,0,.35); transform:translateX(100%); transition:transform .25s ease; z-index:2000; display:flex; flex-direction:column; }
+  .notif-drawer.open{ transform:translateX(0); }
+  .notif-head{ padding:1rem; border-bottom:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:space-between; }
+  .notif-list{ overflow:auto; padding:.5rem 0; }
+  .notif-item{ padding:.75rem 1rem; border-bottom:1px solid rgba(255,255,255,0.06); display:flex; flex-direction:column; gap:.25rem; }
+  .notif-item.unread{ background:rgba(255,200,87,.08); }
+  .notif-meta{ font-size:.85rem; opacity:.8; }
+  .notif-link{ color:#ffcf6a; font-weight:800; }
 
   /* Add these CSS variables that contact.html depends on */
   :root {
@@ -513,6 +537,13 @@
             <li class="nav-item"><a class="nav-link fw-bold {% if request.path == '/about' %}active{% endif %}" href="{{ url_for('views.about') }}"><i class="fa-solid fa-circle-info"></i> About</a></li>
 
             {% if user.is_authenticated %}
+              <li class="nav-item position-relative me-2">
+                <a class="nav-link fw-bold" href="#" id="notifBtn" title="Notifications"><i class="fa-solid fa-bell"></i>
+                  {% if unread_notifications and unread_notifications > 0 %}
+                    <span class="badge bg-danger ms-1">{{ unread_notifications }}</span>
+                  {% endif %}
+                </a>
+              </li>
               <li class="nav-item"><a class="nav-link fw-bold" href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
             {% else %}
               <li class="nav-item"><a class="nav-link fw-bold {% if request.path == '/sign-up' %}active{% endif %}" href="/sign-up"><i class="fa-solid fa-user-plus"></i> Sign Up</a></li>
@@ -522,6 +553,15 @@
         </div>
       </div>
     </nav>
+
+    <!-- Notifications Drawer -->
+    <aside id="notifDrawer" class="notif-drawer" aria-hidden="true" aria-label="Notifications">
+      <div class="notif-head">
+        <div class="fw-bold">Notifications</div>
+        <button class="btn btn-sm" id="notifClose"><i class="fa-solid fa-xmark"></i> Close</button>
+      </div>
+      <div id="notifList" class="notif-list"></div>
+    </aside>
 
     <!-- Content -->
     <div id="content" class="container mt-4">{% block content %}{% endblock %}</div>
@@ -625,6 +665,7 @@
           <div class="toast-body">
             ${message}
           </div>
+          <div class="toast-progress"><div class="bar"></div></div>
         `;
         
         container.appendChild(toast);
@@ -638,13 +679,25 @@
           toast.style.opacity = '1';
           toast.style.transform = 'translateX(0)';
         }, 10);
-        
-        // Auto remove after duration
-        setTimeout(() => {
-          toast.style.opacity = '0';
-          toast.style.transform = 'translateX(20px)';
-          setTimeout(() => toast.remove(), 300);
-        }, duration);
+
+        // Progress bar + auto remove
+        const bar = toast.querySelector('.toast-progress .bar');
+        if (duration && duration > 0) {
+          // Trigger bar shrink after paint
+          setTimeout(() => {
+            bar.style.transitionDuration = duration + 'ms';
+            bar.style.width = '0%';
+          }, 50);
+
+          setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(20px)';
+            setTimeout(() => toast.remove(), 300);
+          }, duration);
+        } else {
+          // Sticky toast (no auto close)
+          bar.style.display = 'none';
+        }
         
         // Close button functionality
         toast.querySelector('.btn-close').addEventListener('click', () => {
@@ -653,6 +706,23 @@
           setTimeout(() => toast.remove(), 300);
         });
       };
+
+      // Render Flask flashed messages into toasts
+      (function() {
+        try {
+          const flashed = {{ get_flashed_messages(with_categories=true)|tojson|safe }};
+          if (Array.isArray(flashed) && flashed.length) {
+            flashed.forEach(([category, msg]) => {
+              // Map Flask categories to toast types
+              const map = { 'message': 'info', 'info': 'info', 'success': 'success', 'error': 'error', 'warning': 'warning' };
+              const type = map[category] || 'info';
+              // Show; warnings stick longer
+              const dur = type === 'warning' ? 7000 : 5000;
+              window.showToast(String(msg), type, dur);
+            });
+          }
+        } catch (_) { /* ignore */ }
+      })();
 
       // Homepage intro animation - simplified and fixed
       (function() {
@@ -745,6 +815,51 @@
             playAndGo(url.href);
           }
         }, { capture: true });
+      })();
+
+      // Notifications: mark as read when clicking bell
+      (function(){
+        const btn = document.getElementById('notifBtn');
+        const drawer = document.getElementById('notifDrawer');
+        const list = document.getElementById('notifList');
+        const closeBtn = document.getElementById('notifClose');
+        if(!btn || !drawer || !list) return;
+
+        async function loadNotifs(){
+          list.innerHTML = '<div class="p-3 text-muted">Loading…</div>';
+          try{
+            const res = await fetch('/notifications', { headers:{'Accept':'application/json'} });
+            const data = res.ok ? await res.json() : [];
+            if(!Array.isArray(data) || data.length===0){ list.innerHTML = '<div class="p-3 text-muted">No notifications.</div>'; return; }
+            list.innerHTML = '';
+            data.forEach(n => {
+              const item = document.createElement('div');
+              item.className = 'notif-item' + (n.is_read? '' : ' unread');
+              const kind = n.kind === 'reply' ? 'replied to your comment' : 'mentioned you';
+              const href = `/contact/thread/${n.thread_id}#c${n.comment_id}`;
+              item.innerHTML = `
+                <div><strong>@${n.actor}</strong> ${kind} — <a class="notif-link" href="${href}">View</a></div>
+                <div class="notif-meta">In thread #${n.thread_id}</div>
+              `;
+              item.querySelector('a')?.addEventListener('click', () => {
+                drawer.classList.remove('open');
+              });
+              list.appendChild(item);
+            });
+          }catch(_){ list.innerHTML = '<div class="p-3 text-danger">Failed to load.</div>'; }
+        }
+
+        async function openDrawer(e){
+          if(e) e.preventDefault();
+          drawer.classList.add('open');
+          await loadNotifs();
+          try{ await fetch('/notifications/mark-read', { method:'POST' }); }catch(_){ }
+          const b = btn.querySelector('.badge'); if(b) b.remove();
+        }
+
+        btn.addEventListener('click', openDrawer);
+        closeBtn?.addEventListener('click', (e)=>{ e.preventDefault(); drawer.classList.remove('open'); });
+        document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') drawer.classList.remove('open'); });
       })();
     </script>
 

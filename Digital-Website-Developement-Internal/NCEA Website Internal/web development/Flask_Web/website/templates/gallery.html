@@ -50,6 +50,7 @@
   .gallery-body { padding:.75rem .9rem; }
   .gallery-title { margin:0 0 .35rem; font-size:.95rem; font-weight:700; }
   .gallery-meta { font-size:.85rem; color:#666; }
+  .gallery-actions { display:flex; gap:.5rem; justify-content:flex-end; margin-top:.5rem; }
 
   .theme-dark .gallery-card { background:#1b1b1b; border-color:rgba(255,255,255,.08); box-shadow:0 6px 18px rgba(0,0,0,.45); }
   .theme-dark .gallery-meta { color:rgba(255,255,255,.75); }
@@ -71,7 +72,7 @@
 
   <div class="row justify-content-center mt-4">
     <div class="col-lg-10 col-xl-9">
-      {% include "_flash.html" %}
+      
 
       <!-- Upload -->
       <div class="card upload-card shadow-sm mb-4">
@@ -122,6 +123,9 @@
 
       <!-- Grid -->
       <div id="galleryGrid" class="gallery-grid">
+        {% if images|length == 0 %}
+          <div class="text-center text-muted py-5">No images yet. Be the first to upload!</div>
+        {% endif %}
         {% for img in images %}
         <article
           class="gallery-card"
@@ -144,6 +148,14 @@
               <strong>By:</strong> {{ img.uploader.username }}
               &nbsp;•&nbsp;
               <strong>Date:</strong> {{ img.nzst }}
+            </div>
+            <div class="gallery-actions">
+              <button class="btn btn-sm btn-outline-secondary" data-copy="{{ url_for('static', filename='gallery/' ~ img.filename) }}"><i class="fa-solid fa-link"></i></button>
+              {% if user.is_authenticated and (user.id == img.uploader_id or user.can_moderate() or user.is_owner) %}
+              <form method="POST" action="{{ url_for('views.delete_gallery_image', image_id=img.id) }}" onsubmit="return confirm('Delete this image?');">
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-regular fa-trash-can"></i></button>
+              </form>
+              {% endif %}
             </div>
           </div>
         </article>
@@ -259,6 +271,19 @@
   })();
 
   // Lightbox
+  // Copy direct link buttons
+  (function(){
+    document.getElementById('galleryGrid')?.addEventListener('click', async (e)=>{
+      const btn = e.target.closest('[data-copy]'); if(!btn) return;
+      e.preventDefault();
+      const url = btn.getAttribute('data-copy');
+      try { await navigator.clipboard.writeText(new URL(url, window.location.origin).toString());
+        btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+        setTimeout(()=> btn.innerHTML = '<i class="fa-solid fa-link"></i>', 1000);
+        if (window.showToast) window.showToast('Link copied.', 'success', 2000);
+      } catch(_) { if (window.showToast) window.showToast('Failed to copy link.', 'error'); }
+    });
+  })();
   (function(){
     const modalEl = document.getElementById('lightbox');
     const imgEl = document.getElementById('lightboxImg');
