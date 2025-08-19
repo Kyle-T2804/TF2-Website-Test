@@ -412,7 +412,28 @@ def sign_up():
     return render_template('sign_up.html', user=current_user)
 
 # About page route
-@views.route('/about')
+@views.route('/about', methods=['GET'])
 def about():
-    # Render the about page template
-    return render_template('about_page.html', user=current_user)
+    # Classes in TF2 are fixed at 9; adjust if you model them separately
+    total_classes = 9
+
+    # Counts from your database
+    total_images = GalleryImage.query.count()
+    total_users = User.query.count()
+
+    # Comments = Notes + ThreadComments (if you use forum threads)
+    total_notes = Note.query.count()
+    try:
+        total_thread_comments = ThreadComment.query.count()
+    except Exception:
+        total_thread_comments = 0
+    total_comments = total_notes + total_thread_comments
+
+    return render_template(
+        "about_page.html",
+        user=current_user,
+        total_classes=total_classes,
+        total_images=total_images,
+        total_users=total_users,
+        total_comments=total_comments,
+    )

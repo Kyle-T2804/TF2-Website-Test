@@ -1,30 +1,6 @@
 /* THEME VARIABLES */
 :root {
-  --bg1: #3a3a3a;
-  --bg2: #a73232;
-  --bg3: #ffc857;
-
-  --text: #232323;
-  --text-inverse: #f1f1f1;
-
-  --surface: #ffffff;
-  --surface-2: #f8f9fa;
-  --border: #232323;
-
-  --accent: #a73232;   /* red */
-  --accent-2: #ffc857; /* gold */
-
-  --nav1: #a73232;
-  --nav2: #ffc857;
-
-  --shadow: 0 4px 16px rgba(0,0,0,0.15);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.25);
-
-  --progress: #a73232;
-  --active-bg: rgba(255, 200, 87, 0.14); /* gold with alpha */
-}
-
-.theme-dark {
+  /* Dark theme is now the default site-wide */
   --bg1: #111;
   --bg2: #222;
   --bg3: #444;
@@ -36,8 +12,8 @@
   --surface-2: #1f1f1f;
   --border: #444;
 
-  --accent: #a73232;
-  --accent-2: #ffc857;
+  --accent: #a73232;   /* red */
+  --accent-2: #ffc857; /* gold */
 
   --nav1: #111;
   --nav2: #222;
@@ -70,6 +46,9 @@ body::before {
   opacity: 0.08;
   z-index: -1;
 }
+
+/* Hide any legacy light/dark toggle control */
+#darkModeToggle { display: none !important; }
 
 /* NAVBAR */
 .app-navbar {
