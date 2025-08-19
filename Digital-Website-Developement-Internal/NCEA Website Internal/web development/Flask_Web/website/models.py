@@ -143,3 +143,19 @@ class Notification(db.Model):
     actor = db.relationship('User', foreign_keys=[actor_id])
     thread = db.relationship('Thread')
     comment = db.relationship('ThreadComment')
+
+
+class ThreadReaction(db.Model):
+    __tablename__ = 'thread_reaction'
+    id = db.Column(db.Integer, primary_key=True)
+    thread_id = db.Column(db.Integer, db.ForeignKey('thread.id', ondelete='CASCADE'), index=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), index=True, nullable=False)
+    emoji = db.Column(db.String(32), nullable=False)  # store the emoji (supports multi-codepoint)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    thread = db.relationship('Thread', backref=db.backref('reactions', lazy='dynamic', cascade='all, delete-orphan'))
+    user = db.relationship('User')
+
+    __table_args__ = (
+        db.UniqueConstraint('thread_id', 'user_id', 'emoji', name='uq_thread_user_emoji'),
+    )

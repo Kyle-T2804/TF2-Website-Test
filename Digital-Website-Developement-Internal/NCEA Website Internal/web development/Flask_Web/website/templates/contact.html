@@ -113,6 +113,34 @@ body {
   cursor:default;
 }
 
+/* Richer description style */
+.thread-desc{ position:relative; background:var(--surface-2); border:1px solid var(--border); border-radius:14px; padding:.65rem .75rem .65rem 2.6rem; box-shadow:inset 0 1px 0 rgba(255,255,255,.02); }
+.thread-desc::before{ content:"\201C"; position:absolute; left:.75rem; top:.25rem; font-size:2rem; line-height:1; color:var(--accent-2); opacity:.35; font-weight:900; }
+.desc-label{ display:block; font-weight:800; color:#a4acb9; font-size:.82rem; letter-spacing:.2px; margin-bottom:.15rem; }
+.desc-body{ color:var(--text); opacity:.95; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; white-space:pre-line; }
+.desc-body mark{ background:rgba(255, 214, 0, .15); color:#ffd600; padding:.05rem .25rem; border-radius:6px; }
+
+/* Reactions */
+.reaction-bar{ display:flex; align-items:center; gap:.35rem; flex-wrap:wrap; margin-top:.6rem; }
+.reaction-pill{ display:inline-flex; align-items:center; gap:.35rem; padding:.18rem .55rem; border-radius:999px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-weight:700; font-size:.85rem; cursor:pointer; user-select:none; transition: background .15s ease, border-color .15s ease, transform .1s ease; }
+.reaction-pill:hover{ background:var(--surface-2); border-color:var(--accent-2); transform:translateY(-1px); }
+.reaction-pill:active{ transform:translateY(0); }
+.reaction-pill.active{ background:var(--accent-2); color:var(--accent); border-color:var(--accent-2); }
+.reaction-pill .count{ font-variant-numeric:tabular-nums; opacity:.95; }
+.reaction-add{ display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:999px; border:1px dashed var(--border); background:transparent; color:#a4acb9; cursor:pointer; transition:border-color .15s ease, color .15s ease, transform .1s ease; }
+.reaction-add:hover{ border-color:var(--accent-2); color:var(--accent-2); transform:translateY(-1px); }
+.emoji-popover{ position:absolute; z-index:20; background:var(--card); color:var(--text); border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.4); padding:.4rem; display:none; }
+.emoji-popover.show{ display:block; animation: popIn .14s ease-out; }
+@keyframes popIn{ from{ transform:translateY(6px); opacity:0; } to{ transform:translateY(0); opacity:1; } }
+.emoji-grid{ display:grid; grid-template-columns:repeat(8, 28px); gap:.25rem; }
+.emoji-btn{ width:28px; height:28px; display:grid; place-items:center; border-radius:8px; border:1px solid transparent; background:transparent; cursor:pointer; font-size:18px; }
+.emoji-btn:hover{ background:var(--surface); border-color:var(--accent-2); }
+.emoji-custom{ display:flex; gap:.4rem; align-items:center; margin-top:.4rem; }
+.emoji-input{ width:120px; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:.35rem .5rem; font-size:.9rem; }
+.emoji-input:focus{ outline:0; border-color:var(--accent-2); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent-2) 25%, transparent); }
+.emoji-add-btn{ display:inline-flex; align-items:center; gap:.3rem; padding:.35rem .6rem; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; }
+.emoji-add-btn:hover{ background:var(--surface-2); border-color:var(--accent-2); }
+
 /* Roles */
 .role-badge{ border-radius:999px; padding:.1rem .5rem; font-size:.75rem; font-weight:800; border:1px solid var(--border); }
 .role-owner{ background:#3b1a1a; color:var(--accent-2); border-color:var(--accent-2); }
@@ -353,11 +381,44 @@ select:focus-visible {
                       </div>
                       <div class="thread-preview">
                         {% if thread.comments and thread.comments[0] %}
-                          <span class="fw-bold text-muted" style="font-size:.97em;">Description:</span>
-                          <span class="desc-clamp" title="{{ thread.comments[0].content|e }}">{{ thread.comments[0].content }}</span>
+                          <div class="thread-desc" title="{{ thread.comments[0].content|e }}">
+                            <span class="desc-label"><i class="fa-solid fa-note-sticky me-1"></i> Description</span>
+                            <div class="desc-body">{{ thread.comments[0].content }}</div>
+                          </div>
                         {% else %}
-                          <span class="text-muted">No description.</span>
+                          <div class="thread-desc">
+                            <span class="desc-label"><i class="fa-solid fa-note-sticky me-1"></i> Description</span>
+                            <div class="desc-body text-muted">No description.</div>
+                          </div>
                         {% endif %}
+                        
+                        <!-- Reactions -->
+                        {% set counts = reaction_counts.get(thread.id, {}) if reaction_counts else {} %}
+                        <div class="reaction-bar" data-thread-id="{{ thread.id }}" data-auth="{% if current_user.is_authenticated %}1{% else %}0{% endif %}">
+                          {% for emoji, cnt in counts.items() %}
+                            <button type="button" class="reaction-pill {% if (thread.id, emoji) in my_reacts %}active{% endif %}" data-emoji="{{ emoji }}" aria-pressed="{% if (thread.id, emoji) in my_reacts %}true{% else %}false{% endif %}">
+                              <span class="emoji">{{ emoji }}</span>
+                              <span class="count">{{ cnt }}</span>
+                            </button>
+                          {% endfor %}
+                          {% if current_user.is_authenticated %}
+                            <button type="button" class="reaction-add" aria-label="Add reaction" title="Add reaction">
+                              <i class="fa-solid fa-plus"></i>
+                            </button>
+                            <div class="emoji-popover" role="menu" aria-label="Pick a reaction">
+                              <div class="emoji-grid">
+                                {% set defaults = ['👍','❤️','🔥','😂','😮','🎯','🙌','👎'] %}
+                                {% for em in defaults %}
+                                  <button type="button" class="emoji-btn" data-emoji="{{ em }}" title="{{ em }}">{{ em }}</button>
+                                {% endfor %}
+                              </div>
+                              <div class="emoji-custom">
+                                <input type="text" class="emoji-input" maxlength="32" placeholder="Type/paste emoji" aria-label="Type or paste any emoji">
+                                <button type="button" class="emoji-add-btn"><i class="fa-solid fa-plus"></i> Add</button>
+                              </div>
+                            </div>
+                          {% endif %}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -522,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let visibleCount = 0;
 
     cards.forEach(card => {
-      const title = normalize(card.dataset.title || '');
+  const title = normalize(card.dataset.title || '');
       const tags = normalize(card.dataset.tags || '');
       const pinned = card.dataset.pinned === '1';
       let show = true;
@@ -574,7 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
-    // Sort the visible items
+  // Sort the visible items
     if (grid) {
       const items = cards
         .filter(c => {
@@ -603,6 +664,149 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log("Filter applied. Visible items:", visibleCount);
   }, 200);
+
+  // --- Reaction handling ---
+  function updateReactionUI(bar, counts, mine) {
+    // Remove pills that are zero/unlisted; update existing; add new if needed
+    const existing = new Map();
+    bar.querySelectorAll('.reaction-pill').forEach(p => {
+      existing.set(p.dataset.emoji, p);
+    });
+    Object.entries(counts || {}).forEach(([emoji, count]) => {
+      let pill = existing.get(emoji);
+      if (!pill) {
+        pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = 'reaction-pill';
+        pill.dataset.emoji = emoji;
+        pill.innerHTML = `<span class="emoji"></span><span class="count"></span>`;
+        const addBtn = bar.querySelector('.reaction-add');
+        bar.insertBefore(pill, addBtn || null);
+        pill.addEventListener('click', onReactionPillClick);
+      }
+      pill.querySelector('.emoji').textContent = emoji;
+      pill.querySelector('.count').textContent = count;
+      const mineHas = Array.isArray(mine) ? mine.includes(emoji) : false;
+      pill.classList.toggle('active', mineHas);
+      pill.setAttribute('aria-pressed', mineHas ? 'true' : 'false');
+    });
+    // Remove pills not present anymore
+    existing.forEach((pill, emoji) => {
+      if (!(emoji in (counts || {}))) {
+        pill.remove();
+      }
+    });
+  }
+
+  function onReactionPillClick(e) {
+  e.preventDefault();
+  e.stopPropagation();
+    const pill = e.currentTarget;
+    const bar = pill.closest('.reaction-bar');
+    const threadId = +bar.dataset.threadId;
+    const emoji = pill.dataset.emoji;
+    fetch(`/threads/${threadId}/react`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ emoji })
+    }).then(r => r.json()).then(data => {
+      if (!data || !data.ok) return;
+      // After toggling, refetch mine for accurate active state
+      fetch(`/threads/${threadId}/reactions`).then(r => r.json()).then(info => {
+        updateReactionUI(bar, info.counts || {}, info.mine || []);
+      }).catch(()=>{});
+    }).catch(()=>{});
+  }
+
+  function setupReactions() {
+    $$('.reaction-bar').forEach(bar => {
+      const isAuth = (bar.getAttribute('data-auth') === '1');
+      // Prevent clicks within the bar from triggering the thread link
+      bar.addEventListener('click', (e) => { e.stopPropagation(); });
+      // Bind existing pills only if authenticated
+      if (isAuth) {
+        bar.querySelectorAll('.reaction-pill').forEach(p => {
+          p.addEventListener('click', onReactionPillClick);
+        });
+      }
+      // Add button popover
+      const addBtn = bar.querySelector('.reaction-add');
+      const pop = bar.querySelector('.emoji-popover');
+      if (isAuth && addBtn && pop) {
+        let open = false;
+        function show() { pop.classList.add('show'); open = true; positionPopover(); }
+        function hide() { pop.classList.remove('show'); open = false; }
+        function positionPopover() {
+          const rect = addBtn.getBoundingClientRect();
+          pop.style.left = rect.left + window.scrollX + 'px';
+          pop.style.top = rect.bottom + window.scrollY + 6 + 'px';
+        }
+        addBtn.addEventListener('click', (e)=>{
+          e.preventDefault();
+          e.stopPropagation();
+          open ? hide() : show();
+        });
+        // Prevent clicks inside the popover from navigating
+        pop.addEventListener('click', (e)=>{ e.stopPropagation(); });
+        document.addEventListener('click', (e)=>{
+          if (!open) return;
+          if (!pop.contains(e.target) && e.target !== addBtn) hide();
+        });
+        window.addEventListener('resize', ()=>{ if (open) positionPopover(); });
+        pop.querySelectorAll('.emoji-btn').forEach(btn => {
+          btn.addEventListener('click', (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const emoji = btn.dataset.emoji;
+            const threadId = +bar.dataset.threadId;
+            fetch(`/threads/${threadId}/react`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ emoji })
+            }).then(r => r.json()).then(data => {
+              if (!data || !data.ok) return;
+              fetch(`/threads/${threadId}/reactions`).then(r => r.json()).then(info => {
+                updateReactionUI(bar, info.counts || {}, info.mine || []);
+                hide();
+              }).catch(()=>{});
+            }).catch(()=>{});
+          });
+        });
+        // Custom emoji handlers
+        const input = pop.querySelector('.emoji-input');
+        const addCustom = pop.querySelector('.emoji-add-btn');
+        function pickCustom() {
+          if (!input) return;
+          let val = (input.value || '').trim();
+          if (!val) return;
+          // Keep it small; allow any characters
+          if ('Segmenter' in Intl) {
+            try {
+              const seg = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+              const it = seg.segment(val)[Symbol.iterator]();
+              const first = it.next();
+              if (!first.done && first.value && first.value.segment) {
+                val = first.value.segment;
+              } else {
+                val = Array.from(val)[0] || val;
+              }
+            } catch { val = Array.from(val)[0] || val; }
+          }
+          const threadId = +bar.dataset.threadId;
+          fetch(`/threads/${threadId}/react`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ emoji: val })
+          }).then(r => r.json()).then(data => {
+            if (!data || !data.ok) return;
+            fetch(`/threads/${threadId}/reactions`).then(r => r.json()).then(info => {
+              updateReactionUI(bar, info.counts || {}, info.mine || []);
+              input.value = '';
+              hide();
+            }).catch(()=>{});
+          }).catch(()=>{});
+        }
+        if (addCustom) addCustom.addEventListener('click', (ev)=>{ ev.preventDefault(); ev.stopPropagation(); pickCustom(); });
+        if (input) input.addEventListener('keydown', (ev)=>{ if (ev.key === 'Enter') { ev.preventDefault(); ev.stopPropagation(); pickCustom(); } });
+      }
+    });
+  }
 
   // CRITICAL FIX: Explicitly bind all event listeners
   
@@ -728,6 +932,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Initial run of applyFilters to ensure proper state on page load
   applyFilters();
+  setupReactions();
   
   console.log("Script initialization complete!");
 });

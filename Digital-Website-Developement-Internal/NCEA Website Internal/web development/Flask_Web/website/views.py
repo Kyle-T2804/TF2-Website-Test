@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, abort, flash, current_app
 from flask_login import login_required, current_user, login_user
-from .models import db, Thread, ThreadComment, Tag, User, Note, GalleryImage, Notification  # ensure these exist
+from .models import db, Thread, ThreadComment, Tag, User, Note, GalleryImage, Notification, ThreadReaction  # ensure these exist
 from sqlalchemy import func
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -174,7 +174,72 @@ def contact():
     except Exception:
         pass
     threads = Thread.query.order_by(Thread.pinned.desc(), Thread.created_at.desc()).all()
-    return render_template("contact.html", user=current_user, threads=threads)
+    # Preload reaction counts per thread
+    reaction_counts = {}
+    try:
+        rows = (
+            db.session.query(ThreadReaction.thread_id, ThreadReaction.emoji, func.count(ThreadReaction.id))
+            .group_by(ThreadReaction.thread_id, ThreadReaction.emoji)
+            .all()
+        )
+        for tid, emoji, cnt in rows:
+            reaction_counts.setdefault(tid, {})[emoji] = cnt
+    except Exception:
+        pass
+    # Map current user's own reactions for quick UI state
+    my_reacts = set()
+    if current_user.is_authenticated:
+        try:
+            mine = ThreadReaction.query.filter_by(user_id=current_user.id).all()
+            for r in mine:
+                my_reacts.add((r.thread_id, r.emoji))
+        except Exception:
+            pass
+    return render_template("contact.html", user=current_user, threads=threads, reaction_counts=reaction_counts, my_reacts=my_reacts)
+
+@views.route("/threads/<int:thread_id>/reactions", methods=["GET"])
+def get_thread_reactions(thread_id: int):
+    # Return counts and whether current user reacted
+    thr = Thread.query.get_or_404(thread_id)
+    rows = (
+        db.session.query(ThreadReaction.emoji, func.count(ThreadReaction.id))
+        .filter(ThreadReaction.thread_id == thread_id)
+        .group_by(ThreadReaction.emoji)
+        .all()
+    )
+    counts = {e: c for e, c in rows}
+    mine = []
+    if current_user.is_authenticated:
+        mine = [r.emoji for r in ThreadReaction.query.filter_by(thread_id=thread_id, user_id=current_user.id).all()]
+    return jsonify({"counts": counts, "mine": mine})
+
+@views.route("/threads/<int:thread_id>/react", methods=["POST"])
+@login_required
+def toggle_thread_reaction(thread_id: int):
+    data = request.get_json(silent=True) or {}
+    emoji = (data.get("emoji") or "").strip()
+    if not emoji:
+        return jsonify({"error": "emoji required"}), 400
+    thr = Thread.query.get_or_404(thread_id)
+    # Constrain to a small number of graphemes (1 ideally). We'll cap to 16 chars to be safe.
+    emoji = emoji[:32]
+    existing = ThreadReaction.query.filter_by(thread_id=thread_id, user_id=current_user.id, emoji=emoji).first()
+    if existing:
+        db.session.delete(existing)
+        action = "removed"
+    else:
+        db.session.add(ThreadReaction(thread_id=thread_id, user_id=current_user.id, emoji=emoji))
+        action = "added"
+    db.session.commit()
+    # return updated counts
+    rows = (
+        db.session.query(ThreadReaction.emoji, func.count(ThreadReaction.id))
+        .filter(ThreadReaction.thread_id == thread_id)
+        .group_by(ThreadReaction.emoji)
+        .all()
+    )
+    counts = {e: c for e, c in rows}
+    return jsonify({"ok": True, "action": action, "counts": counts})
 # Pin/unpin a thread (owner/admin/moderator)
 @views.route("/contact/thread/<int:thread_id>/pin", methods=['POST'])
 @login_required

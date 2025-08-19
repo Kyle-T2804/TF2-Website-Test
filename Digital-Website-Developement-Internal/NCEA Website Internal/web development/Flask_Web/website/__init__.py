@@ -117,3 +117,24 @@ def _run_light_migrations():
                 )
                 """
             )
+        # thread_reaction table
+        try:
+            conn.execute(text("SELECT 1 FROM thread_reaction LIMIT 1"))
+        except Exception:
+            conn.exec_driver_sql(
+                """
+                                CREATE TABLE IF NOT EXISTS thread_reaction (
+                  id INTEGER PRIMARY KEY,
+                  thread_id INTEGER NOT NULL REFERENCES thread(id) ON DELETE CASCADE,
+                  user_id INTEGER NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+                                    emoji VARCHAR(32) NOT NULL,
+                  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            try:
+                conn.exec_driver_sql(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_thread_user_emoji ON thread_reaction(thread_id, user_id, emoji)"
+                )
+            except Exception:
+                pass
